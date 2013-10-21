@@ -1,5 +1,5 @@
 from dsl import *
-from state import *
+from athena.state import *
 
 class Guard:
     def __init__(self,exp):
@@ -10,3 +10,5 @@ class Guard:
         vs.update(inputs)
         return self.exp.ev(vs)
 
+    def __str__(self):
+        return str(self.exp)

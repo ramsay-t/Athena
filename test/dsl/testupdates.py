@@ -1,7 +1,7 @@
 import unittest
 from athena.dsl import *
 from athena.state import *
-from athena.updates import *
+from athena.dsl.updates import *
 
 class TestUpdates(unittest.TestCase):
     def setUp(self):

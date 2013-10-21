@@ -1,5 +1,5 @@
 from dsl import *
-from state import *
+from athena.state import *
 
 class Update:
     def __init__(self,var,exp):
@@ -13,3 +13,5 @@ class Update:
         news[self.varname] = self.exp.ev(vs)
         return news
 
+    def __str__(self):
+        return self.varname + " := " + str(self.exp)

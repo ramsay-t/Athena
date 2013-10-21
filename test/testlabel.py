@@ -1,8 +1,9 @@
 import unittest
 from athena.label import *
 from athena.state import *
-from athena.guards import *
-from athena.updates import *
+from athena.dsl.dsl import *
+from athena.dsl.updates import *
+from athena.dsl.guards import *
 
 class TestLabel(unittest.TestCase):
     def setUp(self):
@@ -15,7 +16,7 @@ class TestLabel(unittest.TestCase):
         g2 = Guard(LEQ(Var('x'),Var('a')))
         u2 = Update('b',Minus(Var('b'),Lit(5)))
         o2 = Update('y',Var('b'))
-        self.label2 = Label([g2],[u2],[o1])
+        self.label2 = Label([g2],[u2],[o2])
 
     def test_is_possible(self):
         self.assertTrue(self.label1.is_possible(self.state,self.ips))
@@ -30,5 +31,8 @@ class TestLabel(unittest.TestCase):
         with self.assertRaises(LabelAppliedOutOfPreconditionException):
             self.label2.apply(self.state,self.ips)
 
-        
+    def test_string(self):
+        self.assertEqual(str(self.label1),"[ x >= a | b := b + 1 / y := a + b ]")
+    def test_string2(self):
+        self.assertEqual(str(self.label2),"[ x <= a | b := b - 5 / y := b ]")
 

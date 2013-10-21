@@ -48,3 +48,28 @@ class Label:
                 result = o.apply(state,inputs)[o.varname]
                 os[o.varname] = result
             return (ns,os)
+
+    def __str__(self):
+        res = "[ "
+        gs = ""
+        for g in self.guards:
+            if gs != "":
+                gs += "; "
+            gs += str(g)
+        res += gs
+        res += " | "
+        us = ""
+        for u in self.updates:
+            if us != "":
+                us += "; "
+            us += str(u)
+        res += us
+        res += " / "
+        os = ""
+        for o in self.outputs:
+            if os != "":
+                os += "; "
+            os += str(o)
+        res += os
+        res += " ]"
+        return res
