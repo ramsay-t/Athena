@@ -5,9 +5,7 @@ from athena.guards import *
 
 class TestGuards(unittest.TestCase):
     def setUp(self):
-        self.state = State(['a','b'])
-        self.state.set('a',0)
-        self.state.set('b',5)
+        self.state = State({'a':0,'b':5})
         self.ips = {'x':42,'y':53}
 
     def test_guard(self):

@@ -13,8 +13,8 @@ class State:
     def varnames(self):
         return self.values.keys()
 
-    def set(self,name,value):
-        self.values[name] = value
+    def __setitem__(self,key,value):
+        self.values[key] = value
 
     def __getitem__(self,key):
         return self.values[key]
@@ -22,3 +22,8 @@ class State:
     def __iter__(self):
         return self.values.iteritems()
 
+    def __str__(self):
+        return str(self.values)
+
+    def copy(self):
+        return State(self.values.copy())

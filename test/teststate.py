@@ -12,7 +12,7 @@ class TestState(unittest.TestCase):
         self.assertEqual(self.s1['b'],0)
 
     def test_set(self):
-        self.s1.set('a',42)
+        self.s1['a'] = 42
         self.assertEqual(self.s1['a'],42)
 
     def test_iter(self):

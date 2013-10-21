@@ -3,12 +3,13 @@ from state import *
 
 class Update:
     def __init__(self,var,exp):
-        self.var = var
+        self.varname = var
         self.exp = exp
 
-    def app(self,state,inputs):
+    def apply(self,state,inputs):
         vs = state.values.copy()
         vs.update(inputs)
-        vs[self.var] = self.exp.ev(vs)
-        return State(vs)
+        news = state.copy()
+        news[self.varname] = self.exp.ev(vs)
+        return news
 
