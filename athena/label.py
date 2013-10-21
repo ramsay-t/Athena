@@ -9,7 +9,7 @@ class Label:
     Update objects. The target variable names for the `outputs` objects should
     form the output alphabet.
     """
-    def __init__(self,label,inputnames,guards,updates,outputs):
+    def __init__(self,label,inputnames,guards,outputs,updates):
         self.label = label
         self.inputnames = inputnames
         self.guards = guards
@@ -57,7 +57,7 @@ class Label:
         gs = ""
         for g in self.guards:
             if gs != "":
-                gs += "; "
+                gs += " ; "
             gs += str(g)
         res += gs
         res += " ] / "
@@ -65,7 +65,7 @@ class Label:
         os = ""
         for o in self.outputs:
             if os != "":
-                os += "; "
+                os += " ; "
             os += str(o)
         res += os
 
@@ -73,9 +73,13 @@ class Label:
         us = ""
         for u in self.updates:
             if us != "":
-                us += "; "
+                us += " ; "
             us += str(u)
         res += us
 
         res += " ]"
         return res
+
+    def __repr__(self):
+        return str(self)
+

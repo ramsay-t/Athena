@@ -12,12 +12,13 @@ class TestLabel(unittest.TestCase):
         g1 = Guard(GEQ(Var('x'),Var('a')))
         u1 = Update('b',Plus(Var('b'),Lit(1)))
         o1 = Update('y',Plus(Var('a'),Var('b')))
-        self.label1 = Label('f',['x'],[g1],[u1],[o1])
+        self.label1 = Label('f',['x'],[g1],[o1],[u1])
         g2 = Guard(LEQ(Var('x'),Var('a')))
         u2 = Update('b',Minus(Var('b'),Lit(5)))
         o2 = Update('y',Var('b'))
-        self.label2 = Label('f',['x'],[g2],[u2],[o2])
-        self.label3 = Label('f',[],[g1],[u1],[o1])
+        self.label2 = Label('f',['x'],[g2],[o2],[u2])
+        self.label3 = Label('f',[],[g1],[o1],[u1])
+        self.label3 = Label('f',['x','y'],[g1,g2],[o1,o2],[u1,u2])
         
 
     def test_is_possible(self):
@@ -40,5 +41,8 @@ class TestLabel(unittest.TestCase):
         self.assertEqual(str(self.label1),"f(x) [ x >= a ] / y := a + b [ b := b + 1 ]")
     def test_string2(self):
         self.assertEqual(str(self.label2),"f(x) [ x <= a ] / y := b [ b := b - 5 ]")
-
-    
+    def test_string3(self):
+        self.assertEqual(
+            str(self.label3)
+            ,"f(x,y) [ x >= a ; x <= a ] / y := a + b ; y := b [ b := b + 1 ; b := b - 5 ]"
+        )
