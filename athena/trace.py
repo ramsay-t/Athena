@@ -1,10 +1,20 @@
 """ The trace module contains the definition of the Trace class 
 and some functions for loading and parsing trace files."""
+class Event:
+    def __init__(self,label,inputs,outputs):
+        """ Create a new Event, with the label and lists of inputs and outputs specified."""
+        self.label = label
+        self.inputs = inputs
+        self.outputs = outputs
+
+    def __str__(self):
+        return str(self.label) + "(" + ",".join(self.inputs) + ")/(" + ",".join(self.outputs) + ")"
+
 class Trace:
     POS = 1
     NEG = 2
 
-    def __init__(self,pn,contents):
+    def __init__(self,pn,content):
         """ 
         Create a new Trace object that is positive or negative 
         and has some events as content.
@@ -14,7 +24,7 @@ class Trace:
 
         """
         self.posneg = pn
-        self.content = contents
+        self.content = content
 
     def is_prefix(self,other):
         """ Determine whether the supplied trace is a prefix of this trace."""
@@ -40,3 +50,10 @@ class Trace:
         
     def __len__(self):
         return len(self.content)
+
+    def __str__(self):
+        contentstring = " ".join(map(str,self.content))
+        if self.posneg == Trace.NEG:
+            return "- " + contentstring
+        else:
+            return "+ " + contentstring
