@@ -46,3 +46,9 @@ class TestLabel(unittest.TestCase):
             str(self.label3)
             ,"f(x,y) [ x >= a ; x <= a ] / y := a + b ; y := b [ b := b + 1 ; b := b - 5 ]"
         )
+
+    def test_equal(self):
+        self.assertTrue(
+            self.label2 ==
+            Label('f',['x'],[Guard(LEQ(Var('x'),Var('a')))],[Update('y',Var('b'))],[Update('b',Minus(Var('b'),Lit(5)))])
+            )

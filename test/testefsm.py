@@ -17,25 +17,45 @@ class TestEFSM(unittest.TestCase):
         
         self.g2 = Guard(GEQ(Var('b'),Lit(5)))
         self.o1 = Update('y',Plus(Var('a'),Var('x')))
-        self.u3 = Update('a',Lit(0))
-        self.l3 = Label('g',['x'],[self.g2],[self.o1],[self.u3,self.u2])
+        self.u4 = Update('a',Lit(0))
+        self.l3 = Label('g',['x'],[self.g2],[self.o1],[self.u4,self.u2])
 
         self.efsm1 = EFSM({
-            (1,2): self.l1 
-            ,(2,2): self.l2
-            ,(2,3): self.l3
+            (1,2): [self.l1] 
+            ,(2,2): [self.l2]
+            ,(2,3): [self.l3]
+        })
+
+        self.l4 = Label('g',['x'],[self.g1],[],[self.u3,self.u2])
+
+        self.efsm2 = EFSM({
+            (1,2): [self.l1]
+            ,(2,3): [self.l2]
+            ,(3,3): [self.l4]
+            ,(3,4): [self.l3]
         })
 
     def test_to_dot(self):
         self.assertEqual(
             self.efsm1.to_dot()
             ,"digraph EFSM {\n"
-            "1 [label=\"1\"]\n"
-            "2 [label=\"2\"]\n"
-            "3 [label=\"3\"]\n"
-            "1 -> 2 [label=\"f(x) [  ] /  [ a := x ; b := b + 1 ]\"]\n"
-            "2 -> 3 [label=\"g(x) [ b >= 5 ] / y := a + x [ a := 0 ; b := b + 1 ]\"]\n"
-            "2 -> 2 [label=\"g(x) [ b < 5 ] /  [ a := a + x ; b := b + 1 ]\"]\n"
+            "\"1\" [label=\"1\"]\n"
+            "\"2\" [label=\"2\"]\n"
+            "\"3\" [label=\"3\"]\n"
+            "\"1\" -> \"2\" [label=\"f(x) [  ] /  [ a := x ; b := b + 1 ]\"]\n"
+            "\"2\" -> \"3\" [label=\"g(x) [ b >= 5 ] / y := a + x [ a := 0 ; b := b + 1 ]\"]\n"
+            "\"2\" -> \"2\" [label=\"g(x) [ b < 5 ] /  [ a := a + x ; b := b + 1 ]\"]\n"
             "}\n")
 
-    
+    def test_merge(self):
+        newefsm = self.efsm2.merge(2,3)
+        self.assertEqual(
+            newefsm.to_dot()
+            ,"digraph EFSM {\n"
+            "\"1\" [label=\"1\"]\n"
+            "\"2-3\" [label=\"2-3\"]\n"
+            "\"4\" [label=\"4\"]\n"
+            "\"1\" -> \"2-3\" [label=\"f(x) [  ] /  [ a := x ; b := b + 1 ]\"]\n"
+            "\"2-3\" -> \"4\" [label=\"g(x) [ b >= 5 ] / y := a + x [ a := 0 ; b := b + 1 ]\"]\n"
+            "\"2-3\" -> \"2-3\" [label=\"g(x) [ b < 5 ] /  [ a := a + x ; b := b + 1 ]\"]\n"
+            "}\n")
