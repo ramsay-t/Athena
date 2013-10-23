@@ -1,13 +1,13 @@
 import unittest
 from athena.label import *
-from athena.state import *
 from athena.dsl.dsl import *
 from athena.dsl.updates import *
 from athena.dsl.guards import *
+from athena.trace import Event
 
 class TestLabel(unittest.TestCase):
     def setUp(self):
-        self.state = State({'a':5,'b':10})
+        self.state = {'a':5,'b':10}
         self.ips = {'x':42}
         g1 = Guard(GEQ(Var('x'),Var('a')))
         u1 = Update('b',Plus(Var('b'),Lit(1)))
@@ -52,3 +52,17 @@ class TestLabel(unittest.TestCase):
             self.label2 ==
             Label('f',['x'],[Guard(LEQ(Var('x'),Var('a')))],[Update('y',Var('b'))],[Update('b',Minus(Var('b'),Lit(5)))])
             )
+        
+    def test_event_to_label(self):
+        e1 = Event('f',['coke'],['pepsi'])
+        l1 = event_to_label(e1)
+        self.assertEqual(l1,
+                    Label(
+                'f'
+                ,['I1']
+                ,[Guard(Equals(Var('I1'),Lit('coke')))]
+                ,[Update('O1',Lit('pepsi'))]
+                ,[]
+                )
+                    )
+        

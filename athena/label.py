@@ -1,3 +1,6 @@
+from dsl.guards import *
+from dsl.updates import *
+
 class LabelAppliedOutOfPreconditionException(Exception):
     pass
 
@@ -42,13 +45,14 @@ class Label:
         if not self.is_possible(state,inputs):
             raise LabelAppliedOutOfPreconditionException()
         else:
-            ns = dict([])
+            ns = dict(state.items())
             for u in self.updates:
-                ns.update(u.apply(state,inputs))
+                result = u.apply(state,inputs)
+                ns[u.varname] = result[u.varname]
             os = dict([])
             for o in self.outputs:
-                result = o.apply(state,inputs)[o.varname]
-                os[o.varname] = result
+                result = o.apply(state,inputs)
+                os[o.varname] = result[o.varname]
             return (ns,os)
 
     def __str__(self):
@@ -86,3 +90,20 @@ class Label:
     def __eq__(self,other):
         return str(self) == str(other)
 
+"""
+Produce a label from an event.
+
+This assigns names I1 - In to the inputs, and O1 - On to the outputs and adds guards and output functions to 
+constrain these to the exact values supplied.
+"""
+def event_to_label(event):
+    inames = []
+    iguards = []
+    for i in range(1,len(event.inputs)+1):
+        iname = "I" + str(i)
+        inames.append(iname)
+        iguards.append(Guard(Equals(Var(iname),Lit(event.inputs[i-1]))))
+    oguards = []
+    for i in range(1,len(event.outputs)+1):
+        oguards.append(Update("O" + str(i),Lit(event.outputs[i-1])))
+    return Label(event.label,inames,iguards,oguards,[])

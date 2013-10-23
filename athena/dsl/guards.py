@@ -1,12 +1,11 @@
 from dsl import *
-from athena.state import *
 
 class Guard:
     def __init__(self,exp):
         self.exp = exp
 
     def ev(self,state,inputs):
-        vs = state.values.copy()
+        vs = dict(state.items())
         vs.update(inputs)
         return self.exp.ev(vs)
 

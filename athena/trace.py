@@ -10,7 +10,7 @@ class Event:
         self.outputs = outputs
 
     def __str__(self):
-        return str(self.label) + "(" + ",".join(self.inputs) + ")/(" + ",".join(self.outputs) + ")"
+        return str(self.label) + "(" + ",".join(map(str,self.inputs)) + ")/(" + ",".join(map(str,self.outputs)) + ")"
 
     def __eq__(self,other):
         return str(self) == str(other)
@@ -69,6 +69,8 @@ class Trace:
     def __repr__(self):
         return str(self)
 
+    def __getitem__(self,i):
+        return self.content[i]
 
 class EventParseException(Exception):
     pass
@@ -86,7 +88,13 @@ def parse_event(eventstring):
         try:
             l = mo.group(1)
             ips = mo.group(2).split(',')
+            if len(ips) == 1:
+                if ips[0] == '':
+                    ips = []
             ops = mo.group(3).split(',')
+            if len(ops) == 1:
+                if ops[0] == '':
+                    ops = []
             return Event(l,ips,ops)
         except AttributeError:
             raise EventParseException(eventstring)

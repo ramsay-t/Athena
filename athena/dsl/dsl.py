@@ -1,5 +1,3 @@
-from athena.state import *
-
 class VariableNotFoundException(Exception):
     def __init__(self,varname):
         self.varname = varname

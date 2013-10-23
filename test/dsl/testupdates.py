@@ -1,11 +1,10 @@
 import unittest
 from athena.dsl import *
-from athena.state import *
 from athena.dsl.updates import *
 
 class TestUpdates(unittest.TestCase):
     def setUp(self):
-        self.state = State({'a':0,'b':5})
+        self.state = {'a':0,'b':5}
         self.ips = {'x':42,'y':53}
 
     def test_update(self):

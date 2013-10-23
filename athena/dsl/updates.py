@@ -1,5 +1,4 @@
 from dsl import *
-from athena.state import *
 
 class Update:
     def __init__(self,var,exp):
@@ -7,7 +6,7 @@ class Update:
         self.exp = exp
 
     def apply(self,state,inputs):
-        vs = state.values.copy()
+        vs = dict(state.items())
         vs.update(inputs)
         news = state.copy()
         news[self.varname] = self.exp.ev(vs)
