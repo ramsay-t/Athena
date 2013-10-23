@@ -1,3 +1,5 @@
+import re
+
 """ The trace module contains the definition of the Trace class 
 and some functions for loading and parsing trace files."""
 class Event:
@@ -9,6 +11,12 @@ class Event:
 
     def __str__(self):
         return str(self.label) + "(" + ",".join(self.inputs) + ")/(" + ",".join(self.outputs) + ")"
+
+    def __eq__(self,other):
+        return str(self) == str(other)
+
+    def __repr__(self):
+        return str(self)
 
 class Trace:
     POS = 1
@@ -57,3 +65,47 @@ class Trace:
             return "- " + contentstring
         else:
             return "+ " + contentstring
+
+    def __repr__(self):
+        return str(self)
+
+
+class EventParseException(Exception):
+    pass
+
+"""
+Parse an event from a string.
+
+Events must have the form <label>(<inputs>)/(<outputs). For example: f(x)/(y)
+"""
+def parse_event(eventstring):
+    if '"' in eventstring:
+        raise EventParseException("Escaped trace events are unimplemented")
+    else:
+        mo = re.match("([a-z,A-Z,0-9]*)\(([^\)]*)\)/\(([^\)]*)\)",eventstring)
+        try:
+            l = mo.group(1)
+            ips = mo.group(2).split(',')
+            ops = mo.group(3).split(',')
+            return Event(l,ips,ops)
+        except AttributeError:
+            raise EventParseException(eventstring)
+
+class TraceParseException(Exception):
+    pass
+
+"""
+Parse a trace string.
+
+Trace strings must start with + or - and then have a space separated list of events. Spaces in events, 
+escaped content, and commas in event inputs and outputs are all currently unsupported.
+"""
+def parse_trace(tracestring):
+    comps = tracestring.split(" ")
+    if len(comps) <= 0:
+        raise TraceParseException(tracestring)
+    if comps[0] == "-":
+        pn = Trace.NEG
+    else:
+        pn = Trace.POS
+    return Trace(pn,map(parse_event,comps[1:]))
