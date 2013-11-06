@@ -2,7 +2,7 @@ import unittest
 from athena.deps.intra import *
 from athena.trace import *
 
-class TestLabel(unittest.TestCase):
+class TestIntra(unittest.TestCase):
     def setUp(self):
         self.i1 = DepItem(2,DepItem.IN,1,"","")
         self.i2 = DepItem(5,DepItem.OUT,1,"","")

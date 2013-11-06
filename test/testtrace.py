@@ -3,10 +3,10 @@ from athena.trace import *
 
 class TestTrace(unittest.TestCase):
     def setUp(self):
-        self.t1 = Trace(Trace.POS,['a','b','c'])
-        self.t2 = Trace(Trace.POS,['a','b'])
-        self.t3 = Trace(Trace.POS,['c'])
-        self.t4 = Trace(Trace.NEG,['a','b','c'])
+        self.t1 = Trace(Trace.POS,[Event('a',[],[]),Event('b',[],[]),Event('c',[],[])])
+        self.t2 = Trace(Trace.POS,[Event('a',[],[]),Event('b',[],[])])
+        self.t3 = Trace(Trace.POS,[Event('c',[],[])])
+        self.t4 = Trace(Trace.NEG,[Event('a',[],[]),Event('b',[],[]),Event('c',[],[])])
         self.e1 = Event('f',['x'],[])
         self.e2 = Event('f',[],['42'])
         self.t5 = Trace(Trace.NEG,[self.e1,self.e1,self.e2])
@@ -72,3 +72,17 @@ class TestTrace(unittest.TestCase):
         nt = parse_trace("+")
         self.assertEqual(len(nt.content),0)
         self.assertEqual(str(nt),"+ ")
+
+    def test_get_alphabet(self):
+        a = get_alphabet([self.t1,self.t2,self.t3,self.t4,self.t5,self.t6])
+        self.assertEquals(len(a),9)
+        self.assertEquals(a[('init',0,0)], ([],[]))
+        self.assertEquals(a[('select',1,0)], ([str],[]))
+        self.assertEquals(a[('coin',1,0)], ([int],[]))
+        self.assertEquals(a[('vend',0,1)], ([],[str]))
+        self.assertEquals(a[('f',1,0)], ([str],[]))
+        self.assertEquals(a[('f',0,1)], ([],[int]))
+        self.assertEquals(a[('a',0,0)], ([],[]))
+        self.assertEquals(a[('b',0,0)], ([],[]))
+        self.assertEquals(a[('c',0,0)], ([],[]))
+

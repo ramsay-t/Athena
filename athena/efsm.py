@@ -11,7 +11,7 @@ class FoundException(Exception):
     pass
 
 class CannotWalkException(Exception):
-    def __init__(self,index,state,data):
+    def __init__(self,index,state,data,event):
         super(CannotWalkException,self).__init__(
             "Failed to walk at index " 
             + str(index) 
@@ -19,6 +19,7 @@ class CannotWalkException(Exception):
             + str(state) 
             + " [" 
             + str(data) + "]"
+            + " --- trying to execute " + str(event)
             )
         self.index = index
         self.state = state
@@ -94,7 +95,7 @@ class EFSM:
                                     raise FoundException(str(s))
                     except KeyError:
                         pass
-                raise CannotWalkException(i,state,data)
+                raise CannotWalkException(i,state,data,e)
             except FoundException:
                 pass
         return (state,data)

@@ -117,3 +117,25 @@ def parse_trace(tracestring):
     else:
         pn = Trace.POS
     return Trace(pn,map(parse_event,comps[1:]))
+
+def get_type(io):
+    try:
+        int(io)
+        return int
+    except ValueError:
+        try:
+            float(io)
+            return float
+        except ValueError:
+            return str
+
+def get_alphabet(traces):
+    result = dict([])
+
+    for t in traces:
+        for e in t.content:
+            eid = (e.label,len(e.inputs),len(e.outputs))
+            if eid not in result.keys():
+                result[eid] = (map(get_type,e.inputs),map(get_type,e.outputs))
+
+    return result
