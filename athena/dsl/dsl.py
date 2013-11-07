@@ -91,3 +91,15 @@ class Var(Exp):
 
     def __str__(self):
         return self.varname
+
+class Concat(BinOp):
+    def __str__(self):
+        return str(self.left) + str(self.right)
+
+    def ev(self,vs):
+        return str(self.left.ev(vs)) + str(self.right.ev(vs))
+
+class Wild(Exp):
+    def __str__(self):
+        return "<*>"
+

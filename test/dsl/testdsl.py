@@ -74,3 +74,8 @@ class TestDSL(unittest.TestCase):
     def test_Minus_string(self):
         self.assertEqual(str(Minus(Lit(1),Lit(1))),"1 - 1")
 
+    def test_concat(self):
+        self.assertEqual(Concat(Lit("key="),Lit("abc")).ev([]),"key=abc")
+    def test_concat_string(self):
+        self.assertEqual(str(Concat(Lit("key="),Lit("abc"))), "key=abc")
+
