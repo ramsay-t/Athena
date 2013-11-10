@@ -1,10 +1,16 @@
 from label import event_to_label
+from deps.intra import *
+from deps.inter import *
+from trace import *
 
 def uniqueadd(src,extra):
     newlist = list(src)
     for e in extra:
-        if e not in newlist:
-            newlist.append(e)
+        for n in newlist:
+            if not n.subsumes(e):
+                newlist.append(e)
+                if e.subsumes(n):
+                    newlist.remove(n)
     return newlist
 
 class FoundException(Exception):
@@ -54,6 +60,7 @@ class EFSM:
     def merge(self,fst,snd):
         newname = str(fst) + "-" + str(snd)
         newtran = dict([])
+        # Merge the states and redirect all the edges
         for (f,s),tt in self.transitions.iteritems():
             if (f != fst) and (f != snd) and (s != fst) and (s != snd):
                 newtran[(f,s)] = tt
@@ -74,14 +81,19 @@ class EFSM:
                 else:
                     newtran[(f,newname)] = tt
             else:
-                raise Exception("Wait, what?")
-        return EFSM(self.initialstate,self.initialdata,newtran)
+                # This edge has nothing to do with this merge
+                pass
+
+        newefsm =  EFSM(self.initialstate,self.initialdata,newtran)
+
+        return newefsm
+
 
     def walk(self,trace):
         state = self.initialstate
         data = self.initialdata
-        for i in range(0,len(trace.content)):
-            e = trace.content[i]
+        for i in range(0,len(trace)):
+            e = trace[i]
             try:
                 for s in self.get_states():
                     try:
@@ -101,18 +113,25 @@ class EFSM:
         return (state,data)
 
 def build_pta(traces):
+    statetraces = {1:[Trace(Trace.POS,[])]}
     efsm = EFSM(1,{},{})
     for t in traces:
         try:
-            efsm.walk(t)
+            for i in range(0,len(t)):
+                subt = Trace(Trace.POS,t[0:i])
+                (s,d) = efsm.walk(subt)
+                if not subt in statetraces[s]:
+                    statetraces[s].append(subt)
         except CannotWalkException as cwe:
             laststate = cwe.state
-            for e in t[cwe.index:]:
+            for i in range(cwe.index,len(t)):
+                e = t[i]
                 states = efsm.get_states()
                 if states == []:
                     nextstate = 2
                 else:
                     nextstate = int(sorted(states)[-1]) + 1
+                statetraces[nextstate] = [Trace(Trace.POS,t[0:i+1])]
                 efsm.transitions[(laststate,nextstate)] = [event_to_label(e)]
                 laststate = nextstate
-    return efsm
+    return (efsm,statetraces)
