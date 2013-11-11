@@ -73,11 +73,12 @@ class Label:
             if not i in self.inputnames:
                 return False
 
-        # All of the other guards should be implied
-        for og in other.guards:
+        # All of the guards should be implied by the other guards
+        # That is, this is *less* restrictive than the other
+        for g in self.guards:
             found = False
-            for g in self.guards:
-                if g.exp.implies(og.exp):
+            for og in other.guards:
+                if og.exp.implies(g.exp):
                     found = True
                     break
             if not found:

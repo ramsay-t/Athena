@@ -69,7 +69,10 @@ class TestLabel(unittest.TestCase):
     def test_subsumes(self):
         l1 = Label('coin',['I1'],[Guard(Equals(Var('I1'),Lit(50)))],[],[])
         l2 = Label('coin',['I1'],[Guard(Equals(Var('I1'),Lit(50)))],[],[])
+        self.assertTrue(l1.subsumes(l2))
         l3 = Label('select',['I1'],[Guard(Equals(Var('I1'),Lit('coke')))],[],[])
         l4 = Label('select',['I1'],[Guard(Equals(Var('I1'),Lit('pepsi')))],[],[])
-        self.assertTrue(l1.subsumes(l2))
         self.assertFalse(l3.subsumes(l4))
+        l5 = Label('select',['I1'],[],[],[])
+        l6 = Label('select',['I1'],[Guard(Equals(Var('I1'),Lit('pepsi')))],[],[])
+        self.assertTrue(l5.subsumes(l6))
