@@ -73,6 +73,13 @@ class TestLabel(unittest.TestCase):
         l3 = Label('select',['I1'],[Guard(Equals(Var('I1'),Lit('coke')))],[],[])
         l4 = Label('select',['I1'],[Guard(Equals(Var('I1'),Lit('pepsi')))],[],[])
         self.assertFalse(l3.subsumes(l4))
+
+    def test_subsumes_expand(self):
         l5 = Label('select',['I1'],[],[],[])
+        l6 = Label('select',['I1'],[Guard(Equals(Var('I1'),Lit('pepsi')))],[],[])
+        self.assertTrue(l5.subsumes(l6))
+
+    def test_subsumes_wild(self):
+        l5 = Label('select',['I1'],[Guard(Equals(Var('I1'),Wild()))],[],[])
         l6 = Label('select',['I1'],[Guard(Equals(Var('I1'),Lit('pepsi')))],[],[])
         self.assertTrue(l5.subsumes(l6))

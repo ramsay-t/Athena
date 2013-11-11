@@ -168,6 +168,8 @@ class Lit(Exp):
             return self.val == other.ev({})
         except VariableNotFoundException:
             return False
+        except EvaluatingWildcardException:
+            return True
 
 class Plus(BinOp):
     opimage = "+"
@@ -224,6 +226,13 @@ class Concat(BinOp):
         except VariableNotFoundException:
             return super(Concat,self).implies(other)
 
+class EvaluatingWildcardException(Exception):
+    def __init__(self,vs):
+        self.vs = vs
+    def __repr__(self):
+        return str(self)
+    def __str__(self):
+        return "Evaluated under " + str(self.vs)
 
 class Wild(Exp):
     def __str__(self):
@@ -237,3 +246,7 @@ class Wild(Exp):
             return True
         else:
             return False
+    def ev(self,vs):
+        # Its not really clear what it means to ev a wildcard...
+        raise EvaluatingWildcardException(vs)
+
