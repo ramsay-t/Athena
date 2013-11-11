@@ -32,6 +32,9 @@ class TestDSL(unittest.TestCase):
         self.assertEqual(Equals(Lit(1),Lit(2)).ev([]),False)
     def test_eq_string(self):
         self.assertEqual(str(Equals(Lit(1),Lit(2))),"1 = 2")
+    def test_eq_wild(self):
+        self.assertTrue(Equals(Lit(1),Wild()).ev([]))
+        self.assertTrue(Equals(Wild(),Lit('fake')).ev([]))
     def test_eq_implies(self):
         self.assertTrue(Equals(Lit(1),Lit(1)).implies(Equals(Lit(1),Lit(1))))
         self.assertFalse(Equals(Lit(1),Lit(1)).implies(Equals(Lit(47),Lit(47))))

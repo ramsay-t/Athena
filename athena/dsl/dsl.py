@@ -67,7 +67,10 @@ class Not(MonOp):
 class Equals(BinOp):
     opimage = "="
     def ev(self,vs):
-        return self.left.ev(vs) == self.right.ev(vs)
+        if (isinstance(self.left,Wild) or isinstance(self.right,Wild)):
+            return True
+        else:
+            return self.left.ev(vs) == self.right.ev(vs)
     def is_commutative(self):
         return True
     def implies(self,other):
