@@ -3,16 +3,6 @@ from deps.intra import *
 from deps.inter import *
 from trace import *
 
-def uniqueadd(src,extra):
-    newlist = list(src)
-    for e in extra:
-        for n in newlist:
-            if not n.subsumes(e):
-                newlist.append(e)
-                if e.subsumes(n):
-                    newlist.remove(n)
-    return newlist
-
 class FoundException(Exception):
     pass
 
@@ -59,35 +49,42 @@ class EFSM:
     
     def merge(self,fst,snd):
         newname = str(fst) + "-" + str(snd)
-        newtran = dict([])
+        newefsm =  EFSM(self.initialstate,self.initialdata,dict([]))
+
         # Merge the states and redirect all the edges
         for (f,s),tt in self.transitions.iteritems():
             if (f != fst) and (f != snd) and (s != fst) and (s != snd):
-                newtran[(f,s)] = tt
-            if ((f == fst) or (f == snd)) and ((s == snd) or (s == fst)):
+                map((lambda t: newefsm.add_trans(f,s,t)), tt)
+            elif ((f == fst) or (f == snd)) and ((s == snd) or (s == fst)):
                 # Reflexive edge
-                if (newname,newname) in newtran.keys():
-                    newtran[(newname,newname)] = uniqueadd(newtran[(newname,newname)],tt)
-                else:
-                    newtran[(newname,newname)] = tt
+                map((lambda t: newefsm.add_trans(newname,newname,t)), tt)
             elif (f == fst) or (f == snd):
-                if (newname,s) in newtran.keys():
-                    newtran[(newname,s)] = uniqueadd(newtran[(newname,s)],tt)
-                else:
-                    newtran[(newname,s)] = tt
+                map((lambda t: newefsm.add_trans(newname,s,t)), tt)
             elif (s == fst) or (s == snd):
-                if (f,newname) in newtran.keys():
-                    newtran[(f,newname)] = uniqueadd(newtran[(f,newname)],tt)
-                else:
-                    newtran[(f,newname)] = tt
+                map((lambda t: newefsm.add_trans(f,newname,t)), tt)
             else:
-                # This edge has nothing to do with this merge
-                pass
-
-        newefsm =  EFSM(self.initialstate,self.initialdata,newtran)
+                exit("Wait, what? " + str((f,s)) + " vs " + str((fst,snd)))
 
         return newefsm
 
+    def add_trans(self,fst,snd,label):
+        if (fst,snd) in self.transitions.keys():
+            newlist = self.transitions[(fst,snd)]
+        else:
+            newlist = []
+        isnew = True
+
+        for n in newlist:
+            if n.subsumes(label):
+                isnew = False
+
+        if isnew:
+            for n in newlist:
+                if label.subsumes(n):
+                    newlist.remove(n)
+            newlist.append(label)
+
+        self.transitions[(fst,snd)] = newlist
 
     def walk(self,trace):
         state = self.initialstate

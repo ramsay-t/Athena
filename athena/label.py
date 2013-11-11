@@ -55,6 +55,86 @@ class Label:
                 os[o.varname] = result[o.varname]
             return (ns,os)
 
+    """
+    Test whether this label 'subsumes' another label.
+
+    A label subsumes another when this label's guards are more general than the other,
+    and the labels are otherwise equal. 
+
+    e.g. "init(I1) [ I1 > 5 ] /  [ ]" subsumes "init(I1) [ I1 = 9 ] /  [ ]"
+    """
+    def subsumes(self,other):
+        if not (self.label == other.label):
+            return False
+        for i in self.inputnames:
+            if not i in other.inputnames:
+                return False
+        for i in other.inputnames:
+            if not i in self.inputnames:
+                return False
+
+        # All of the other guards should be implied
+        for og in other.guards:
+            found = False
+            for g in self.guards:
+                if g.exp.implies(og.exp):
+                    found = True
+                    break
+            if not found:
+                return False
+
+        # All of these outputs should imply the other outputs
+        for o in self.outputs:
+            found = False
+            for oo in other.outputs:
+                if oo.varname == o.varname:
+                    found = True
+                    if not o.exp.implies(oo.exp):
+                        return False
+                    break
+            if not found:
+                # All of these outputs should be present in the other label
+                return False
+
+        # All of the other outputs should be in this label and should be implied
+        for oo in other.outputs:
+            found = False
+            for o in self.outputs:
+                if o.varname == oo.varname:
+                    found = True
+                    if not o.exp.implies(oo.exp):
+                        return False
+                    break
+            if not found:
+                return False
+
+        # All of these updates should imply the other outputs
+        for u in self.updates:
+            found = False
+            for ou in other.updates:
+                if ou.varname == u.varname:
+                    found = True
+                    if not u.exp.implies(ou.exp):
+                        return False
+                    break
+            if not found:
+                # All of these outputs should be present in the other label
+                return False
+
+        # All of the other outputs should be in this label and should be implied
+        for ou in other.updates:
+            found = False
+            for u in self.updates:
+                if u.varname == ou.varname:
+                    found = True
+                    if not u.exp.implies(ou.exp):
+                        return False
+                    break
+            if not found:
+                return False
+                        
+        return True
+
     def __str__(self):
         res = str(self.label) + "(" + ",".join(self.inputnames) + ") [ "
 

@@ -113,6 +113,12 @@ class TestEFSM(unittest.TestCase):
 
         newefsm = self.efsm3.merge(5,7)
 
+        with open("1.dot","w") as f:
+            f.write(expected_dot)
+
+        with open("2.dot","w") as f:
+            f.write(newefsm.to_dot())
+
         self.assertEqual(
             newefsm.to_dot()
             ,expected_dot
@@ -207,19 +213,19 @@ class TestEFSM(unittest.TestCase):
                         "\"7\" [label=\"7\"]\n"
                         "\"3\" [label=\"3\"]\n"
                         "\"5-11\" [label=\"5-11\"]\n"
-                        "\"4\" [label=\"4\"]\n"
+                        "\"8\" [label=\"8\"]\n"
                         "\"9\" [label=\"9\"]\n"
                         "\"10\" [label=\"10\"]\n"
-                        "\"8\" [label=\"8\"]\n"
+                        "\"4\" [label=\"4\"]\n"
                         "\"6-12\" [label=\"6-12\"]\n"
                         "\"1\" -> \"2\" [label=\"init() [  ] /  [  ]\"]\n"
                         "\"2\" -> \"7\" [label=\"select(I1) [ I1 = pepsi ] /  [  ]\"]\n"
                         "\"3\" -> \"5-11\" [label=\"coin(I1) [ I1 = 100 ] /  [  ]\"]\n"
-                        "\"3\" -> \"4\" [label=\"coin(I1) [ I1 = 50 ] /  [  ]\"]\n"
+                        "\"7\" -> \"8\" [label=\"coin(I1) [ I1 = 50 ] /  [  ]\"]\n"
                         "\"9\" -> \"10\" [label=\"vend() [  ] / O1 := pepsi [  ]\"]\n"
                         "\"2\" -> \"3\" [label=\"select(I1) [ I1 = coke ] /  [  ]\"]\n"
                         "\"8\" -> \"9\" [label=\"coin(I1) [ I1 = 50 ] /  [  ]\"]\n"
-                        "\"7\" -> \"8\" [label=\"coin(I1) [ I1 = 50 ] /  [  ]\"]\n"
+                        "\"3\" -> \"4\" [label=\"coin(I1) [ I1 = 50 ] /  [  ]\"]\n"                       
                         "\"5-11\" -> \"6-12\" [label=\"vend() [  ] / O1 := coke [  ]\"]\n"
                         "\"4\" -> \"5-11\" [label=\"coin(I1) [ I1 = 50 ] /  [  ]\"]\n"
                         "}\n")
