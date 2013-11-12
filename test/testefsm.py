@@ -9,6 +9,8 @@ from athena.deps.intra import *
 from athena.deps.inter import *
 
 class TestEFSM(unittest.TestCase):
+    maxDiff = None
+
     def setUp(self):
         self.u1 = Update('a',Var('x'))
         self.u2 = Update('b',Plus(Var('b'),Lit(1)))
@@ -75,8 +77,8 @@ class TestEFSM(unittest.TestCase):
             "\"2\" [label=\"2\"]\n"
             "\"3\" [label=\"3\"]\n"
             "\"1\" -> \"2\" [label=\"f(x) [  ] /  [ a := x ; b := b + 1 ]\"]\n"
-            "\"2\" -> \"3\" [label=\"g(x) [ b >= 5 ] / y := a + x [ a := 0 ; b := b + 1 ]\"]\n"
             "\"2\" -> \"2\" [label=\"g(x) [ b < 5 ] /  [ a := a + x ; b := b + 1 ]\"]\n"
+            "\"2\" -> \"3\" [label=\"g(x) [ b >= 5 ] / y := a + x [ a := 0 ; b := b + 1 ]\"]\n"
             "}\n")
 
     def test_merge(self):
@@ -85,11 +87,11 @@ class TestEFSM(unittest.TestCase):
             newefsm.to_dot()
             ,"digraph EFSM {\n"
             "\"1\" [label=\"1\"]\n"
-            "\"2-3\" [label=\"2-3\"]\n"
             "\"4\" [label=\"4\"]\n"
+            "\"2-3\" [label=\"2-3\"]\n"
             "\"1\" -> \"2-3\" [label=\"f(x) [  ] /  [ a := x ; b := b + 1 ]\"]\n"
             "\"2-3\" -> \"4\" [label=\"g(x) [ b >= 5 ] / y := a + x [ a := 0 ; b := b + 1 ]\"]\n"
-            "\"2-3\" -> \"2-3\" [label=\"g(x) [ b < 5 ] /  [ a := a + x ; b := b + 1 ]\"]\n"
+            "\"2-3\" -> \"2-3\" [label=\"g(x) [ b < 5 ] /  [ a := a + x ; b := b + 1 ]\"]\n"           
             "}\n")
 
     def test_edge_merge(self):
@@ -97,27 +99,21 @@ class TestEFSM(unittest.TestCase):
                     "\"1\" [label=\"1\"]\n"
                     "\"2\" [label=\"2\"]\n"
                     "\"3\" [label=\"3\"]\n"
-                    "\"5-7\" [label=\"5-7\"]\n"
+                    "\"4\" [label=\"4\"]\n"
                     "\"6\" [label=\"6\"]\n"
                     "\"8\" [label=\"8\"]\n"
-                    "\"4\" [label=\"4\"]\n"
+                    "\"5-7\" [label=\"5-7\"]\n"
                     "\"1\" -> \"2\" [label=\"init() [  ] /  [  ]\"]\n"
+                    "\"2\" -> \"3\" [label=\"select(I1) [ I1 = pepsi ] /  [  ]\"]\n"
+                    "\"2\" -> \"3\" [label=\"select(I1) [ I1 = coke ] /  [  ]\"]\n"
+                    "\"3\" -> \"4\" [label=\"coin(I1) [ I1 = 50 ] /  [  ]\"]\n"
                     "\"3\" -> \"5-7\" [label=\"coin(I1) [ I1 = 100 ] /  [  ]\"]\n"
+                    "\"4\" -> \"5-7\" [label=\"coin(I1) [ I1 = 50 ] /  [  ]\"]\n"
                     "\"5-7\" -> \"6\" [label=\"vend() [  ] / O1 := coke [  ]\"]\n"
                     "\"5-7\" -> \"8\" [label=\"vend() [  ] / O1 := pepsi [  ]\"]\n"
-                    "\"2\" -> \"3\" [label=\"select(I1) [ I1 = coke ] /  [  ]\"]\n"
-                    "\"2\" -> \"3\" [label=\"select(I1) [ I1 = pepsi ] /  [  ]\"]\n"
-                    "\"4\" -> \"5-7\" [label=\"coin(I1) [ I1 = 50 ] /  [  ]\"]\n"
-                    "\"3\" -> \"4\" [label=\"coin(I1) [ I1 = 50 ] /  [  ]\"]\n"
                     "}\n")
 
         newefsm = self.efsm3.merge(5,7)
-
-        with open("1.dot","w") as f:
-            f.write(expected_dot)
-
-        with open("2.dot","w") as f:
-            f.write(newefsm.to_dot())
 
         self.assertEqual(
             newefsm.to_dot()
@@ -152,28 +148,29 @@ class TestEFSM(unittest.TestCase):
         expected_dot = ("digraph EFSM {\n"
                         "\"1\" [label=\"1\"]\n"
                         "\"2\" [label=\"2\"]\n"
-                        "\"7\" [label=\"7\"]\n"
-                        "\"9\" [label=\"9\"]\n"
-                        "\"10\" [label=\"10\"]\n"
-                        "\"5\" [label=\"5\"]\n"
-                        "\"6\" [label=\"6\"]\n"
-                        "\"8\" [label=\"8\"]\n"
-                        "\"11\" [label=\"11\"]\n"
-                        "\"12\" [label=\"12\"]\n"
                         "\"3\" [label=\"3\"]\n"
                         "\"4\" [label=\"4\"]\n"
+                        "\"5\" [label=\"5\"]\n"
+                        "\"6\" [label=\"6\"]\n"
+                        "\"7\" [label=\"7\"]\n"
+                        "\"8\" [label=\"8\"]\n"
+                        "\"9\" [label=\"9\"]\n"
+                        "\"10\" [label=\"10\"]\n"
+                        "\"11\" [label=\"11\"]\n"
+                        "\"12\" [label=\"12\"]\n"
                         "\"1\" -> \"2\" [label=\"init() [  ] /  [  ]\"]\n"
+                        "\"2\" -> \"3\" [label=\"select(I1) [ I1 = coke ] /  [  ]\"]\n"
                         "\"2\" -> \"7\" [label=\"select(I1) [ I1 = pepsi ] /  [  ]\"]\n"
-                        "\"9\" -> \"10\" [label=\"vend() [  ] / O1 := pepsi [  ]\"]\n"
+                        "\"3\" -> \"4\" [label=\"coin(I1) [ I1 = 50 ] /  [  ]\"]\n"
+                        "\"3\" -> \"11\" [label=\"coin(I1) [ I1 = 100 ] /  [  ]\"]\n"
+                        "\"4\" -> \"5\" [label=\"coin(I1) [ I1 = 50 ] /  [  ]\"]\n"
                         "\"5\" -> \"6\" [label=\"vend() [  ] / O1 := coke [  ]\"]\n"
                         "\"7\" -> \"8\" [label=\"coin(I1) [ I1 = 50 ] /  [  ]\"]\n"
-                        "\"11\" -> \"12\" [label=\"vend() [  ] / O1 := coke [  ]\"]\n"
-                        "\"3\" -> \"11\" [label=\"coin(I1) [ I1 = 100 ] /  [  ]\"]\n"
                         "\"8\" -> \"9\" [label=\"coin(I1) [ I1 = 50 ] /  [  ]\"]\n"
-                        "\"4\" -> \"5\" [label=\"coin(I1) [ I1 = 50 ] /  [  ]\"]\n"
-                        "\"2\" -> \"3\" [label=\"select(I1) [ I1 = coke ] /  [  ]\"]\n"
-                        "\"3\" -> \"4\" [label=\"coin(I1) [ I1 = 50 ] /  [  ]\"]\n"
+                        "\"9\" -> \"10\" [label=\"vend() [  ] / O1 := pepsi [  ]\"]\n"
+                        "\"11\" -> \"12\" [label=\"vend() [  ] / O1 := coke [  ]\"]\n"
                         "}\n")
+        
         self.assertEqual(
             pta.to_dot()
             ,expected_dot)
@@ -210,24 +207,68 @@ class TestEFSM(unittest.TestCase):
         expected_dot = ("digraph EFSM {\n"
                         "\"1\" [label=\"1\"]\n"
                         "\"2\" [label=\"2\"]\n"
-                        "\"7\" [label=\"7\"]\n"
                         "\"3\" [label=\"3\"]\n"
-                        "\"5-11\" [label=\"5-11\"]\n"
+                        "\"4\" [label=\"4\"]\n"
+                        "\"7\" [label=\"7\"]\n"
                         "\"8\" [label=\"8\"]\n"
                         "\"9\" [label=\"9\"]\n"
                         "\"10\" [label=\"10\"]\n"
-                        "\"4\" [label=\"4\"]\n"
+                        "\"5-11\" [label=\"5-11\"]\n"
                         "\"6-12\" [label=\"6-12\"]\n"
                         "\"1\" -> \"2\" [label=\"init() [  ] /  [  ]\"]\n"
-                        "\"2\" -> \"7\" [label=\"select(I1) [ I1 = pepsi ] /  [  ]\"]\n"
-                        "\"3\" -> \"5-11\" [label=\"coin(I1) [ I1 = 100 ] /  [  ]\"]\n"
-                        "\"7\" -> \"8\" [label=\"coin(I1) [ I1 = 50 ] /  [  ]\"]\n"
-                        "\"9\" -> \"10\" [label=\"vend() [  ] / O1 := pepsi [  ]\"]\n"
                         "\"2\" -> \"3\" [label=\"select(I1) [ I1 = coke ] /  [  ]\"]\n"
-                        "\"8\" -> \"9\" [label=\"coin(I1) [ I1 = 50 ] /  [  ]\"]\n"
+                        "\"2\" -> \"7\" [label=\"select(I1) [ I1 = pepsi ] /  [  ]\"]\n"
                         "\"3\" -> \"4\" [label=\"coin(I1) [ I1 = 50 ] /  [  ]\"]\n"                       
-                        "\"5-11\" -> \"6-12\" [label=\"vend() [  ] / O1 := coke [  ]\"]\n"
+                        "\"3\" -> \"5-11\" [label=\"coin(I1) [ I1 = 100 ] /  [  ]\"]\n"
                         "\"4\" -> \"5-11\" [label=\"coin(I1) [ I1 = 50 ] /  [  ]\"]\n"
+                        "\"7\" -> \"8\" [label=\"coin(I1) [ I1 = 50 ] /  [  ]\"]\n"
+                        "\"8\" -> \"9\" [label=\"coin(I1) [ I1 = 50 ] /  [  ]\"]\n"
+                        "\"9\" -> \"10\" [label=\"vend() [  ] / O1 := pepsi [  ]\"]\n"
+                        "\"5-11\" -> \"6-12\" [label=\"vend() [  ] / O1 := coke [  ]\"]\n"
                         "}\n")
    
         self.assertEqual(efsm.to_dot(),expected_dot)
+
+    def test_retro_subsumption_in_add_trans(self):
+        efsm = EFSM(
+            1
+            ,{}
+            ,{
+                (1,2): [event_to_label(parse_event("f(key=coke)/()"))]
+            }
+        )
+        l = Label('f',['I1'],[Guard(Equals(Var('I1'),Concat(Lit("key="),Wild())))],[],[])
+        efsm.add_trans(1,2,l)
+        self.assertEquals(efsm.transitions[(1,2)],[l])
+        
+    def test_retro_subsumption_complex(self):
+        efsm = EFSM(
+            1
+            ,{}
+            ,{
+                (1,2): [Label('f',['I1'],[Guard(Equals(Var('I1'),Concat(Wild(),Concat(Lit("key="),Wild()))))],[],[])]
+            }
+        )
+        l = Label(
+            'f',
+            ['I1'],
+            [
+                Guard(
+                    Equals(
+                        Var('I1'),
+                        Concat(
+                            Wild(),
+                            Concat(
+                                Lit("="),
+                                Wild()
+                                )
+                            )
+                        )
+                    )
+                ]
+            ,[]
+            ,[]
+            )
+        efsm.add_trans(1,2,l)
+        self.assertEquals(efsm.transitions[(1,2)],[l])
+        

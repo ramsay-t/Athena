@@ -47,6 +47,29 @@ class BinOp(Exp):
         else:
             return False
 
+    def __eq__(self,other):
+        if isinstance(other,self.__class__):
+            if self.is_commutative():
+                return (
+                    (
+                        (self.left == other.left)
+                        and
+                        (self.right == other.right)
+                    ) or (
+                        (self.left == other.right)
+                        and
+                        (self.right == other.left)
+                    )
+                )
+            else:
+                return (
+                    (self.left == other.left)
+                    and
+                    (self.right == other.right)
+                )
+        else:
+            return False
+
 class MonOp(Exp):
     def __init__(self,operand):
         self.operand = operand
@@ -225,6 +248,12 @@ class Var(Exp):
         return self.varname
 
     def implies(self,other):
+        if isinstance(other,Var):
+            return self.varname == other.varname
+        else:
+            return False
+
+    def __eq__(self,other):
         if isinstance(other,Var):
             return self.varname == other.varname
         else:

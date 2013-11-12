@@ -38,11 +38,12 @@ class EFSM:
     
     def to_dot(self):
         res = "digraph EFSM {\n"
-        for s in self.get_states():
+        for s in sorted(self.get_states()):
             res += "\"" + str(s) + "\" [label=\"" + str(s) + "\"]\n"
-        for ((fst,snd),tt) in self.transitions.items():
+        for (fst,snd) in sorted(self.transitions.keys()):
+            tt = self.transitions[(fst,snd)]
             # Multiple labels are possible between any two states
-            for t in tt:
+            for t in sorted(tt):
                 res += "\"" + str(fst) + "\" -> \"" + str(snd) + "\" [label=\"" + str(t) + "\"]\n"
         res += "}\n"
         return res

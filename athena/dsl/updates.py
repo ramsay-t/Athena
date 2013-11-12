@@ -14,3 +14,13 @@ class Update:
 
     def __str__(self):
         return self.varname + " := " + str(self.exp)
+
+    def __eq__(self,other):
+        if isinstance(other,Update):
+            return (
+                (self.varname == other.varname)
+                and
+                (self.exp == other.exp)
+                )
+        else:
+            return False

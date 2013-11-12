@@ -58,14 +58,14 @@ class TestInter(unittest.TestCase):
         # The select/vend match
         self.assertEqual(res[0],
                          InterDep(
-                             DepItem(2,DepItem.IN,1,"","")
-                             ,DepItem(5,DepItem.OUT,1,"","")
+                             DepItem((2,2,2),DepItem.IN,1,"","")
+                             ,DepItem((5,5,5),DepItem.OUT,1,"","")
                          ))
         # Coins match too
         self.assertEqual(res[1],
                          InterDep(
-                             DepItem(3,DepItem.IN,1,"","")
-                             ,DepItem(4,DepItem.IN,1,"","")
+                             DepItem((3,3,3),DepItem.IN,1,"","")
+                             ,DepItem((4,4,4),DepItem.IN,1,"","")
                          ))
 
     def test_get_inters2(self):
@@ -73,8 +73,8 @@ class TestInter(unittest.TestCase):
         self.assertEqual(len(res),1)
         self.assertEqual(res[0],
                          InterDep(
-                             DepItem(2,DepItem.OUT,1,"key=","")
-                             ,DepItem(3,DepItem.IN,1,"k:","")
+                             DepItem((2,2,2),DepItem.OUT,1,"key=","")
+                             ,DepItem((3,3,3),DepItem.IN,1,"k:","")
                          ))
 
     def test_get_inters3(self):
@@ -90,8 +90,8 @@ class TestInter(unittest.TestCase):
         i1r = re_state(self.efsm,self.ids1[0],self.t1)
         self.assertEqual(i1r,
                          IntraDep(
-                DepItem(2,DepItem.IN,1,"","")
-                ,DepItem(5,DepItem.OUT,1,"","")
+                DepItem((2,2),DepItem.IN,1,"","")
+                ,DepItem((5,5),DepItem.OUT,1,"","")
                 ,"coke"
                 )
                          )

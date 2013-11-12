@@ -40,7 +40,8 @@ This is not necessary, since one can have a more specific prefix or suffix than 
 e.g. (1,IN,1,"key=","") vs (1,IN,1,"=","")
 """
 def get_intradep_item_match(item1, item2):
-    if ((item1.eventindex != item2.eventindex)
+    # eventindex is now a pait of (trace index, efsm state)
+    if ((item1.eventindex[1] != item2.eventindex[1])
         or
         (item1.inout != item2.inout)
         or
@@ -51,7 +52,14 @@ def get_intradep_item_match(item1, item2):
         cpre = get_common_prefix(item1.pre,item2.pre)
         csuf = get_common_suffix(item1.suf,item2.suf)
         if ((cpre != None) and (csuf != None)):
-            return DepItem(item1.eventindex,item1.inout,item1.contentindex,cpre,csuf)
+            # eventindex becomes a triple (efsm state, trace index 1, trace index 2)
+            # This allows the EFSM merger to fix both the efsm labels and the traces
+            return DepItem(
+                (item1.eventindex[1],item1.eventindex[0],item2.eventindex[0])
+                ,item1.inout
+                ,item1.contentindex
+                ,cpre
+                ,csuf)
         else:
             return None
 
@@ -71,9 +79,10 @@ def re_state(efsm,intra,trace):
     (s1, d1) = efsm.walk(pre)
     post = athena.trace.Trace(trace.posneg,trace[0:intra.snd.eventindex-1])
     (s2, d2) = efsm.walk(post)
+    
     return IntraDep(
-        DepItem(s1,intra.fst.inout,intra.fst.contentindex,intra.fst.pre,intra.fst.suf)
-        ,DepItem(s2,intra.snd.inout,intra.snd.contentindex,intra.snd.pre,intra.snd.suf),
+        DepItem((intra.fst.eventindex,s1),intra.fst.inout,intra.fst.contentindex,intra.fst.pre,intra.fst.suf)
+        ,DepItem((intra.snd.eventindex,s2),intra.snd.inout,intra.snd.contentindex,intra.snd.pre,intra.snd.suf),
         intra.content
         )
     
@@ -87,6 +96,6 @@ def get_inter_deps(efsm,intras1,trace1,intras2,trace2):
             i2r = re_state(efsm,i2,trace2)
             match = get_intradep_match(i1r,i2r)
             if match != None:
-                results.append(InterDep(i1.fst,i1.snd))
+                results.append(match)
     return results
 
