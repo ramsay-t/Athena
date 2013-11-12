@@ -1,3 +1,5 @@
+import re
+
 class VariableNotFoundException(Exception):
     def __init__(self,varname):
         self.varname = varname
@@ -172,7 +174,19 @@ class Lit(Exp):
         except VariableNotFoundException:
             return False
         except EvaluatingWildcardException:
-            return True
+            if isinstance(other,Wild):
+                return True
+            else:
+                if isinstance(other,Concat):
+                    m = re.match(other.as_re(),str(self))
+                    if m == None:
+                        return False
+                    else:
+                        return True
+
+                    
+                else:
+                    return False
 
 class Plus(BinOp):
     opimage = "+"
@@ -228,6 +242,40 @@ class Concat(BinOp):
             self.ev({}) == other.ev({})
         except VariableNotFoundException:
             return super(Concat,self).implies(other)
+        except EvaluatingWildcardException:
+            if isinstance(other,Wild):
+                # Any one thing implies 'anything'...
+                return True
+            elif isinstance(other,Concat):
+                # This is mad, but it just might work...
+                # If this is a less specific regular expression then it will match all the
+                # string parts of the more specific one.
+                m = re.match(self.as_re(),other.as_re())
+                
+                if (m != None):
+                    # This is more general
+                    return False
+                else:
+                    return True
+            else:
+                # Only Wild and Concat should ever contain 'Wild's, so this must be the Wild problem
+                # and Wild can never imply something more specific.
+                return False
+
+    def as_re(self):
+        if isinstance(self.left,Wild):
+            l = ".*"
+        elif isinstance(self.left,Concat):
+            l = self.left.as_re()
+        else:
+            l = re.sub("\.","\\.",str(self.left))
+        if isinstance(self.right,Wild):
+            r = ".*"
+        elif isinstance(self.right,Concat):
+            r = self.right.as_re()
+        else:
+            r = re.sub("\.","\\.",str(self.right))
+        return l+r
 
 class EvaluatingWildcardException(Exception):
     def __init__(self,vs):

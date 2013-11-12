@@ -83,3 +83,85 @@ class TestLabel(unittest.TestCase):
         l5 = Label('select',['I1'],[Guard(Equals(Var('I1'),Wild()))],[],[])
         l6 = Label('select',['I1'],[Guard(Equals(Var('I1'),Lit('pepsi')))],[],[])
         self.assertTrue(l5.subsumes(l6))
+
+    def test_subsumes_pre_suf(self):
+        l5 = Label('select',['I1'],[Guard(Equals(Var('I1'),Concat(Lit("key="),Wild())))],[],[])
+        l6 = Label('select',['I1'],[Guard(Equals(Var('I1'),Lit('key=wibble')))],[],[])
+        self.assertTrue(l5.subsumes(l6))
+        l7 = Label('select',['I1'],[Guard(Equals(Var('I1'),Lit('wibble')))],[],[])
+        self.assertFalse(l5.subsumes(l7))
+        l5 = Label('select',['I1'],[Guard(Equals(Var('I1'),Concat(Wild(),Lit("=key"))))],[],[])
+        l6 = Label('select',['I1'],[Guard(Equals(Var('I1'),Lit('wibble=key')))],[],[])
+        self.assertTrue(l5.subsumes(l6))
+        l7 = Label('select',['I1'],[Guard(Equals(Var('I1'),Lit('wibble')))],[],[])
+        self.assertFalse(l5.subsumes(l7))
+        
+    def test_complex_subsumption(self):
+        l1 = Label('select',['I1'],[Guard(Equals(
+            Var('I1'),
+            Concat(
+                Wild(),
+                Concat(
+                    Lit("key="),
+                    Wild()
+                )
+            )))
+            ,Guard(Equals(
+                Var('I1'),
+                Concat(
+                    Wild(),
+                    Concat(
+                        Lit("code="),
+                        Wild()
+                    )
+                )
+            ))],[],[])
+        l2 = Label('select',['I1'],[Guard(Equals(Var('I1'),Lit('key=wibble&code=wobble')))],[],[])
+        self.assertTrue(l1.subsumes(l2))
+        l3 = Label('select',['I1'],[Guard(Equals(Var('I1'),Lit('code=wobble&key=wibble')))],[],[])
+        self.assertTrue(l1.subsumes(l3))
+
+    def test_subsumption_with_suffixes(self):
+        l1 = Label(
+            'select'
+            ,['I1']
+            ,[Guard(Equals(
+                        Var('I1'),
+                        Concat(
+                            Concat(
+                                Wild(),
+                                Concat(
+                                    Concat(
+                                        Lit("key="),
+                                        Wild()
+                                        )
+                                    ,Lit(";")
+                                    )
+                                )
+                                ,Wild()
+                            )
+                        ))
+              ,Guard(Equals(
+                        Var('I1'),
+                        Concat(
+                            Concat(
+                                Wild(),
+                                Concat(
+                                    Concat(
+                                        Lit("code="),
+                                        Wild()
+                                        )
+                                    ,Lit(";")
+                                    )
+                                )
+                            ,Wild()
+                            )
+                        ))
+              ]
+            ,[]
+            ,[])
+        l2 = Label('select',['I1'],[Guard(Equals(Var('I1'),Lit('key=wibble&code=wobble')))],[],[])
+        self.assertFalse(l1.subsumes(l2))
+        l3 = Label('select',['I1'],[Guard(Equals(Var('I1'),Lit('code=wobble;&key=wibble;')))],[],[])
+        self.assertTrue(l1.subsumes(l3))
+

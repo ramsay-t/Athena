@@ -123,3 +123,7 @@ class TestDSL(unittest.TestCase):
     def test_concat_string(self):
         self.assertEqual(str(Concat(Lit("key="),Lit("abc"))), "key=abc")
 
+    def test_as_re(self):
+        self.assertEqual(Concat(Lit("key="),Concat(Wild(),Lit(";"))).as_re(), "key=.*;")
+        self.assertEqual(Concat(Lit("key.*="),Concat(Wild(),Lit(";"))).as_re(), "key\\.*=.*;")
+
