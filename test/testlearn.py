@@ -156,11 +156,51 @@ class TestLearn(unittest.TestCase):
                         "\"5-11\" -> \"6-12\" [label=\"vend() [  ] / O1 := V1 [  ]\"]\n"
                         "}\n")
 
-        with open("1.dot","w") as f:
-            f.write(expected_dot)
+        self.assertEquals(expected_dot,newefsm.to_dot())
+
+    def test_merge_interdependent_labels_outputs(self):
+        traces = [
+            parse_trace("+ request_key()/() response()/(key=abc) request(k:abc;)/() response()/(ok)")
+            ,parse_trace("+ request_key()/() response()/(key=pqr) request(k:pqr;)/() response()/(ok)")
+            ,parse_trace("+ request_key()/() response()/(key=xyz) request(k:abc;)/() response()/(FAIL)")
+            ]
+        (pta,statetraces) = build_pta(traces)
+        intras = make_intras(statetraces)
+
+        with open("pta.dot","w") as f:
+            f.write(pta.to_dot())
+
+        (efsm,statetraces,intras) = merge_states(pta,statetraces,intras,4,7)
+        (efsm,statetraces,intras) = merge_states(efsm,statetraces,intras,5,8)
+        (efsm,statetraces,intras) = merge_states(efsm,statetraces,intras,3,6)
+
+        with open("efsm.dot","w") as f:
+            f.write(efsm.to_dot())
+
+
+        inters = get_inters(efsm,statetraces,intras)
+
+        newefsm = merge_interdependent_labels(efsm,statetraces,inters)
+        
         with open("2.dot","w") as f:
             f.write(newefsm.to_dot())
-        with open("pta.dot","w") as f:
-            f.write(self.pta.to_dot())
-       
-        self.assertEquals(expected_dot,newefsm.to_dot())
+
+        expected_dot = ("digraph EFSM {\n"
+                        "\"1\" [label=\"1\"]\n"
+                        "\"2\" [label=\"2\"]\n"
+                        "\"3\" [label=\"3\"]\n"
+                        "\"4\" [label=\"4\"]\n"
+                        "\"5\" [label=\"5\"]\n"
+                        "\"6\" [label=\"6\"]\n"
+                        "\"7\" [label=\"7\"]\n"
+                        "\"8\" [label=\"8\"]\n"
+                        "\"9-11\" [label=\"9-11\"]\n"
+                        "\"10-12\" [label=\"10-12\"]\n"
+
+                        "}\n")
+
+        with open("1.dot","w") as f:
+            f.write(expected_dot)
+
+        self.assertEqual(expected_dot,newefsm.to_dot())
+

@@ -84,7 +84,7 @@ def parse_event(eventstring):
     if '"' in eventstring:
         raise EventParseException("Escaped trace events are unimplemented")
     else:
-        mo = re.match("([a-z,A-Z,0-9]*)\(([^\)]*)\)/\(([^\)]*)\)",eventstring)
+        mo = re.match("([a-z,A-Z,0-9,_,-]*)\(([^\)]*)\)/\(([^\)]*)\)",eventstring)
         try:
             l = mo.group(1)
             ips = mo.group(2).split(',')

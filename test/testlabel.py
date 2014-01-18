@@ -22,9 +22,11 @@ class TestLabel(unittest.TestCase):
         
 
     def test_is_possible(self):
-        self.assertTrue(self.label1.is_possible(self.state,self.ips))
+        self.assertTrue(self.label1.is_possible(self.state,self.ips,{'y':15}))
     def test_is_possible_false(self):
-        self.assertFalse(self.label2.is_possible(self.state,self.ips))
+        self.assertFalse(self.label2.is_possible(self.state,self.ips,{'y':10}))
+    def test_is_possible_output_match(self):
+        self.assertFalse(self.label1.is_possible(self.state,self.ips,{'y':16}))
 
     def test_apply(self):
         (newS,os) = self.label1.apply(self.state,self.ips)

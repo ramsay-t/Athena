@@ -97,14 +97,22 @@ class EFSM:
                     try:
                         for l in self.transitions[(state,s)]:
                             if (l.label == e.label) and (len(l.inputnames) == len(e.inputs)) and (len(l.outputs) == len(e.outputs)):
-                                bindings = dict(zip(l.inputnames,e.inputs))
-                                if l.is_possible(data,bindings):
-                                    (newdata,os) = l.apply(data,bindings)
+                                ips  = dict(zip(l.inputnames,e.inputs))
+                                ops = dict(zip(
+                                        map((lambda n: "O" + str(n)),range(1,len(e.outputs)+1))
+                                        ,e.outputs
+                                        ))
+                                #print ">>> " + str(l)
+                                #print "\t" + str(ips) + " " + str(ops)
+                                #print "\t== " + str(l.is_possible(data,ips,ops))
+                                if l.is_possible(data,ips,ops):
+                                    (newdata,os) = l.apply(data,e.inputs)
                                     data = newdata
                                     state = s
                                     raise FoundException(str(s))
                     except KeyError:
                         pass
+                print "\n" + self.to_dot()
                 raise CannotWalkException(i,state,data,e)
             except FoundException:
                 pass
@@ -114,13 +122,17 @@ def build_pta(traces):
     statetraces = {1:[Trace(Trace.POS,[])]}
     efsm = EFSM(1,{},{})
     for t in traces:
+        #print "\nAdding " + str(t)
         try:
-            for i in range(0,len(t)):
+            for i in range(0,len(t)+1):
+                #print "Walking " + str(t[0:i]) 
                 subt = Trace(Trace.POS,t[0:i])
                 (s,d) = efsm.walk(subt)
+                #print "\t got to " + str(s)
                 if not subt in statetraces[s]:
                     statetraces[s].append(subt)
         except CannotWalkException as cwe:
+            #print "\t failed at " + str(cwe.state) + " -- " +  str(t[0:i+1])
             laststate = cwe.state
             for i in range(cwe.index,len(t)):
                 e = t[i]

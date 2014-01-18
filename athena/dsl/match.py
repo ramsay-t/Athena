@@ -28,3 +28,28 @@ class Match(Exp):
                 return None
         else:
             return None
+
+    def implies(self,other):
+        # A more specific match can imply a less specific match
+        if isinstance(other,Match):
+            if not self.content.implies(other.content):
+                return False
+            else:
+                try:
+                    sp = self.pre.ev({})
+                    op = other.pre.ev({})
+                    ss = self.suf.ev({})
+                    os = other.suf.ev({})
+                    return (
+                        sp.endswith(op)
+                        and
+                        ss.startswith(os)
+                    )
+                except VariableNotFoundException:
+                    print "\nCan't work out " + str(self) + " implies " + str(other) + " --- Var needed" 
+                    return False
+                except EvaluatingWildcardException:
+                    print "\nCan't work out " + str(self) + " implies " + str(other) + " --- Wildcard evaluation" 
+                    return False
+        else:
+            return False

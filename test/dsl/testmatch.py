@@ -88,3 +88,52 @@ class TestMatch(unittest.TestCase):
             )
             ,"< key=abc matches key=<*> >"
         )
+
+    def test_match_implies(self):
+        self.assertTrue(Match(
+            Var('V1')
+            ,Lit("key=")
+            ,Lit(";")
+        ).implies(
+            Match(
+                Var('V1')
+                ,Lit("=")
+                ,Lit(";")
+            )
+        ))
+    def test_match_implies1(self):
+        self.assertFalse(Match(
+            Var('V1')
+            ,Lit("key=")
+            ,Lit(";")
+        ).implies(
+            Match(
+                Var('X1')
+                ,Lit("=")
+                ,Lit(";")
+            )
+        ))
+    def test_match_implies2(self):
+        self.assertFalse(Match(
+            Var('V1')
+            ,Lit("key=")
+            ,Lit(";")
+        ).implies(
+            Match(
+                Var('V1')
+                ,Lit("k=")
+                ,Lit(";")
+            )
+        ))
+    def test_match_implies3(self):
+        self.assertTrue(Match(
+            Var('V1')
+            ,Lit("key=")
+            ,Lit(";")
+        ).implies(
+            Match(
+                Var('V1')
+                ,Lit("=")
+                ,Lit("")
+            )
+        ))

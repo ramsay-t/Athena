@@ -18,16 +18,24 @@ def make_intras(statetraces):
 
 def get_states_and_datas(efsm,trace,point):
     pre = trace[0:point-1]
+    print "\nWalking " + str(pre)
     (s1,d1) = efsm.walk(pre)
+    print "\t" + str((s1,d1))
     post = trace[0:point]
+    print "\nWalking " + str(post)
     (s2,d2) = efsm.walk(post)
+    print "\t" + str((s2,d2))
     return ((s1,d1),(s2,d2))
     
 def get_value_label(efsm,newv,s1,d1,s1a,l1,io,item,pre,suf):
     newlabels = []
     for l in efsm.transitions[(s1,s1a)]:
         ips = dict(zip(l.inputnames,l1.inputs))
-        if l.is_possible(d1,ips):
+        ops = dict([])
+        for (n,v) in zip(range(1,len(l1.outputs)+1),l1.outputs):
+            ops['O' + str(n)] = v
+        #print "\nIs " + str(l) + " possible under " + str((d1,ips,ops))
+        if l.is_possible(d1,ips,ops):
             # update this label...
             
             if io == DepItem.IN:
@@ -74,7 +82,7 @@ def get_value_label(efsm,newv,s1,d1,s1a,l1,io,item,pre,suf):
             if ((pre == '') and (suf == '')):
                 uexp = content
             else:
-                uexp = Match(content,pre,suf)
+                uexp = Match(content,Lit(pre),Lit(suf))
             u = Update(newv,uexp)
             if u not in l.updates:
                 newu = l.updates + [u]
@@ -85,6 +93,8 @@ def get_value_label(efsm,newv,s1,d1,s1a,l1,io,item,pre,suf):
             efsm.transitions[(s1,s1a)].remove(l)
             newlabels.append(newl)
             break
+        #else:
+            #print "No."
     for newl in newlabels:
         efsm.add_trans(s1,s1a,newl)
 
@@ -92,16 +102,20 @@ def use_value_label(efsm,newv,s1,d1,s1a,l1,io,item,pre,suf):
     newlabels = []
     for l in efsm.transitions[(s1,s1a)]:
         ips = dict(zip(l.inputnames,l1.inputs))
-        if suf == "":
-            right = Var(newv)
-        else:
-            right = Concat(Var(newv), Lit(suf))
-        if pre == "":
-            exp = right
-        else:
-            exp = Concat(Lit(pre),right)
-        if l.is_possible(d1,ips):
+        ops = dict([])
+        for (n,v) in zip(range(1,len(l1.outputs)+1),l1.outputs):
+            ops["O" + str(n)] = v
+        #print "\nIs " + str(l) + " possible under " + str((d1,ips,ops))
+        if l.is_possible(d1,ips,ops):
             # update this label...
+            if suf == "":
+                right = Var(newv)
+            else:
+                right = Concat(Var(newv), Lit(suf))
+            if pre == "":
+                exp = right
+            else:
+                exp = Concat(Lit(pre),right)
             
             if io == DepItem.IN:
                 newo = l.outputs
@@ -130,6 +144,9 @@ def use_value_label(efsm,newv,s1,d1,s1a,l1,io,item,pre,suf):
             efsm.transitions[(s1,s1a)].remove(l)
             newlabels.append(newl)
             break
+        #else:
+        #    print "No."
+
     for newl in newlabels:
         efsm.add_trans(s1,s1a,newl)
 
@@ -138,13 +155,13 @@ def merge_interdependent_labels(efsm,statetraces,inters):
     newefsm =  EFSM(efsm.initialstate,efsm.initialdata,efsm.transitions)
         
     for (state,t1i,t2i) in inters.keys():
-        print "\n" + str((state,t1i,t2i)) + ":"
+        #print "\n" + str((state,t1i,t2i)) + ":"
 
         t1 = statetraces[state][t1i]
         t2 = statetraces[state][t2i]
         for inter in inters[(state,t1i,t2i)]:
             # Find the relevant events in the traces, and the labels in the transition matrix
-            print "\t" + str(inter)
+            #print "\t" + str(inter)
 
             t1l1 = t1[inter.fst.eventindex[1]-1]
             ((t1s1,t1d1),(t1s1a,t1d1a)) = get_states_and_datas(newefsm,t1,inter.fst.eventindex[1])
@@ -164,7 +181,7 @@ def merge_interdependent_labels(efsm,statetraces,inters):
             get_value_label(newefsm,newv,t2s1,t2d1,t2s1a,t2l1,inter.fst.inout,inter.fst.contentindex,inter.fst.pre,inter.fst.suf)
             use_value_label(newefsm,newv,t2s2,t2d2,t2s2a,t2l2,inter.snd.inout,inter.snd.contentindex,inter.snd.pre,inter.snd.suf)
             
-        return newefsm
+    return newefsm
 
 def get_inters(efsm,statetraces,intras):
     inters = {}

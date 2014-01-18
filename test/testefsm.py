@@ -114,7 +114,11 @@ class TestEFSM(unittest.TestCase):
                     "}\n")
 
         newefsm = self.efsm3.merge(5,7)
-
+        with open("1.dot","w") as f:
+            f.write(expected_dot)
+        with open("2.dot","w") as f:
+            f.write(newefsm.to_dot())
+        
         self.assertEqual(
             newefsm.to_dot()
             ,expected_dot

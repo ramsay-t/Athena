@@ -19,18 +19,36 @@ class Label:
         self.updates = updates
         self.outputs = outputs
         
-    def is_possible(self,state,inputs):
+    def is_possible(self,state,inputs,outputs):
         """
-        Test whether this transition is possible for a given state and set of inputs.
+        Test whether this transition is possible for a given state and set of inputs, and with the given output expectations.
         
         This evaluates the guards.
         """
         for g in self.guards:
             if not g.ev(state,inputs):
                 return False
+        
+        vs = dict(state.items())
+        vs.update(inputs)
+        vs.update(outputs)
+
+        if outputs != {}:
+            for o in self.outputs:
+                equiv = False
+                #print "Evaluating " + str(outputs[o.varname]) + " == " + str(o.exp) + " under " + str(vs)
+                try:
+                    equiv = (outputs[o.varname] == o.exp.ev(vs))
+                except VariableNotFoundException:
+                    equiv = False
+                except EvaluatingWildcardException:
+                    equiv = False
+                if not equiv:
+                    return False
+
         return self.inputnames == inputs.keys()
 
-    def apply(self,state,inputs):
+    def apply(self,data,inputs):
         """
         Take the transition.
 
@@ -42,16 +60,17 @@ class Label:
         outputs are, themselves, Update objects, they can be defined with
         the same - or derived - expressions, if this is required.
         """
-        if not self.is_possible(state,inputs):
+        ips  = dict(zip(self.inputnames,inputs))
+        if not self.is_possible(data,ips,{}):
             raise LabelAppliedOutOfPreconditionException()
         else:
-            ns = dict(state.items())
+            ns = dict(data.items())
             for u in self.updates:
-                result = u.apply(state,inputs)
+                result = u.apply(data,ips)
                 ns[u.varname] = result[u.varname]
             os = dict([])
             for o in self.outputs:
-                result = o.apply(state,inputs)
+                result = o.apply(data,ips)
                 os[o.varname] = result[o.varname]
             return (ns,os)
 
@@ -87,7 +106,9 @@ class Label:
         # All of these outputs should imply the other outputs
         for o in self.outputs:
             found = False
+            #print "\nSeeking output " + str(o.varname)  
             for oo in other.outputs:
+                #print "\t" + str(oo) + "  [" + str(o.exp.implies(oo.exp)) + "]"
                 if oo.varname == o.varname:
                     found = True
                     if not o.exp.implies(oo.exp):
