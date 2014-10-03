@@ -1,0 +1,33 @@
+(declare-variable p11 String)
+(declare-variable p12 String)
+(declare-variable p13 String)
+
+(declare-variable pre String)
+(declare-variable suf String)
+
+(assert (= p11 "key=abc;keykey=nothtekey;wibble=pppppp;"))
+(assert (= p12 "noise=qqqqqqkeykey;eeey=blonde;key=abcagain;yyy=zzzz"))
+
+(declare-variable v1 String)
+(declare-variable v2 String)
+
+(declare-variable beg1 String)
+(declare-variable end1 String)
+(declare-variable beg2 String)
+(declare-variable end2 String)
+
+(assert (= p11 (Concat beg1 (Concat pre (Concat v1 (Concat suf end1))))))
+(assert (= p12 (Concat beg2 (Concat pre (Concat v2 (Concat suf end2))))))
+
+(assert (=> (= (Length pre) 0) (and (= (Length beg1) 0) (= (Length beg2) 0))))
+(assert (=> (= (Length suf) 0) (and (= (Length end1) 0) (= (Length end2) 0))))
+
+(assert (= (- 0 1) (Indexof v1 suf)))
+(assert (= (- 0 1) (Indexof v2 suf)))
+
+(assert (= (- 0 1) (Indexof beg1 pre)))
+(assert (= (- 0 1) (Indexof beg2 pre)))
+
+(assert (= v1 "abc"))
+(assert (= v2 "abcagain"))
+
