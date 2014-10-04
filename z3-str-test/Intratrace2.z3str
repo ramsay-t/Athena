@@ -1,0 +1,38 @@
+(declare-variable p11 String)
+(declare-variable p12 String)
+
+(declare-variable content String)
+(declare-variable start1 Int)
+(declare-variable start2 Int)
+(declare-variable len Int)
+
+(assert (=
+	(Substring p11 start1 len)
+	(Substring p12 start2 len)
+	)
+)
+
+(assert (=
+	(Substring p11 start1 len)
+	content
+	)
+)
+
+(assert (not (=
+	(Substring p11 (- start1 1) 1)
+	(Substring p12 (- start2 1) 1)
+)))
+
+(assert (not (=
+	(Substring p11 start1 (+ len 1))
+	(Substring p12 start2 (+ len 1))
+)))
+
+(assert (> len 1))
+
+
+(assert (= p11 "myfirstparam"))
+(assert (= p12 "This is the first one"))
+
+
+(assert (not (= start1 2)))

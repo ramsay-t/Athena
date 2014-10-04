@@ -6,7 +6,7 @@
 (declare-variable suf String)
 
 (assert (= p11 "key=abc;wibble=pppppp;"))
-(assert (= p12 "noise=qqqqqq;key=def;yyy=zzzz"))
+(assert (= p12 "noise=qqqqqq;key=def;yyy=zzzz;random=def;"))
 
 (declare-variable v1 String)
 (declare-variable v2 String)
@@ -21,6 +21,17 @@
 
 (assert (=> (= (Length pre) 0) (and (= (Length beg1) 0) (= (Length beg2) 0))))
 (assert (=> (= (Length suf) 0) (and (= (Length end1) 0) (= (Length end2) 0))))
+
+(declare-variable beg1last String)
+(assert (= beg1last (Substring beg1 (- (Length beg1) 1) 1)))
+
+(declare-variable beg2last String)
+(assert (= beg2last (Substring beg2 (- (Length beg2) 1) 1)))
+
+(assert (=>
+	(not (or (= beg1 "") (= beg2 "")))
+	(not (= beg1last beg2last))
+	))
 
 (assert (= (- 0 1) (Indexof v1 suf)))
 (assert (= (- 0 1) (Indexof v2 suf)))
