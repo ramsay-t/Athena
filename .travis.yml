@@ -4,10 +4,7 @@ otp_release:
 before_install:
    - git clone https://github.com/elixir-lang/elixir
    - make -C elixir
-   - git clone https://git01.codeplex.com/z3
-   - cd z3; autoconf; ./configure; python scripts/mk_make.py; cd build; make
-   - wget http://downloads.sourceforge.net/project/z3str/Z3-str_20140720.tar.bz2?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fz3str%2Ffiles%2F&ts=1412455604&use_mirror=heanet
-   - tar -jxf Z3-str_20140720.tar.bz
-   - cd Z3-str; ./configure; make
+   - git clone https://git01.codeplex.com/z3; cd z3; autoconf; ./configure; python scripts/mk_make.py; cd build; make
+   - wget http://downloads.sourceforge.net/project/z3str/Z3-str_20140720.tar.bz2?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fz3str%2Ffiles%2F&ts=1412455604&use_mirror=heanet; tar -jxf Z3-str_20140720.tar.bz; cd Z3-str; ./configure; make
 before_script: "export PATH=`pwd`/elixir/bin:$PATH"
 script: mix test
