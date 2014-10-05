@@ -6,7 +6,7 @@ before_install:
    - sudo apt-get install -y dos2unix
    - wget http://www.dcs.shef.ac.uk/~ramsay/z3-4.1.1.tar.bz2
    - tar -jxf z3-4.1.1.tar.bz2
-   - pushd
+   - pushd `pwd`
    - cd z3
    - autoconf
    - ./configure
@@ -14,7 +14,7 @@ before_install:
    - popd
    - wget http://downloads.sourceforge.net/project/z3str/Z3-str_20140720.tar.bz2?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fz3str%2Ffiles%2F&ts=1412455604&use_mirror=heanet
    - tar -jxf Z3-str_20140720.tar.bz*
-   - pushd
+   - pushd `pwd`
    - cd Z3-str_20140720
    - sed -i 's|Z3_path = .*|Z3_path = '`pwd`'/../z3|' Makefile
    - make
