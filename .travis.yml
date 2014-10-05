@@ -4,6 +4,7 @@ otp_release:
 before_install:
    - git clone https://github.com/elixir-lang/elixir
    - make -C elixir
+   - wget http://downloads.sourceforge.net/project/dos2unix/dos2unix/7.0/dos2unix-7.0.tar.gz?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fdos2unix%2F&ts=1412494988&use_mirror=cznic; tar -zxf dos2unix*; cd dos2unix; make; make install
    - wget http://www.dcs.shef.ac.uk/~ramsay/z3-4.1.1.tar.bz2; tar -jxf z3-4.1.1.tar.bz2; cd z3; autoconf; ./configure; python scripts/mk_make.py; cd build; make
    - wget http://downloads.sourceforge.net/project/z3str/Z3-str_20140720.tar.bz2?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fz3str%2Ffiles%2F&ts=1412455604&use_mirror=heanet; tar -jxf Z3-str_20140720.tar.bz; cd Z3-str; ./configure; make
 before_script: "export PATH=`pwd`/elixir/bin:$PATH"
