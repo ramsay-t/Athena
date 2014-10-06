@@ -31,7 +31,8 @@
 (assert (> len 1))
 
 
-(assert (= p11 "myfirstparam"))
-(assert (= p12 "This is the first one"))
+(assert (= p11 "1myfirstparam1"))
+(assert (= p12 "2This is the first param2"))
+(assert (not (= content "first")))
 
 

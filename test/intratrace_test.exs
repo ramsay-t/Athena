@@ -2,7 +2,7 @@ defmodule IntratraceTest do
   use ExUnit.Case
 
 	defp e1() do
-		%{:label => "select",:inputs => ["coke"], :outputs => ["ok"]}
+		%{:label => "select",:inputs => ["coke"], :outputs => ["done"]}
 	end
 
 	defp e2() do
@@ -10,20 +10,33 @@ defmodule IntratraceTest do
 	end
 
 	defp e3() do
-		%{:label => "vendwhat",:inputs => ["give me coke"], :outputs => []}
+		%{:label => "vendwhat",:inputs => ["givemecoke"], :outputs => []}
 	end
 		
+	defp e4() do
+		%{:label => "vendwhat",:inputs => ["can you give a coke to me, please?"], :outputs => []}
+	end
+
   test "One pair One total intra" do
     assert Intratrace.get_intras_from_pair(e1(),e2()) == [{{:input,1},{:output,1},"coke"}]
   end
   test "One pair One partial intra" do
     assert Intratrace.get_intras_from_pair(e3(),e2()) == [{{:input,1},{:output,1},"coke"}]
   end
+	@tag timeout: 120000
+  test "One pair multiple intras" do
+    assert Intratrace.get_intras_from_pair(e3(),e4()) == [
+																													{{:input,1},{:input,1},"give"},
+																													{{:input,1},{:input,1},"coke"},
+																													{{:input,1},{:input,1},"me"}
+																												]
+  end
+
 
 	defp t1() do
-		[%{:label => "select", :inputs => ["coke"], :outputs => ["ok"]},
-		 %{:label => "coin", :inputs => ["50p"], :outputs => ["ok"]},
-		 %{:label => "coin", :inputs => ["50p"], :outputs => ["ok"]},
+		[%{:label => "select", :inputs => ["coke"], :outputs => ["done"]},
+		 %{:label => "coin", :inputs => ["50p"], :outputs => ["done"]},
+		 %{:label => "coin", :inputs => ["50p"], :outputs => ["done"]},
 		 %{:label => "vend", :inputs => [], :outputs => ["coke"]},
 		]
 	end
@@ -40,10 +53,10 @@ defmodule IntratraceTest do
 	test "Trace with some Intras" do
 		assert Intratrace.get_intras(t1()) == [
 																					 %{:fst => {1,:input,1}, :snd => {4,:output,1}, :content => "coke"},
-																					 %{:fst => {1,:output,1}, :snd => {2,:output,1}, :content => "ok"},
-																					 %{:fst => {1,:output,1}, :snd => {3,:output,1}, :content => "ok"},
-																					 %{:fst => {2,:input,1}, :snd => {3,:input,1}, :content => "50p"},
-																					 %{:fst => {2,:output,1}, :snd => {3,:output,1}, :content => "ok"}
+																					 %{:fst => {1,:output,1}, :snd => {3,:output,1}, :content => "done"},
+																					 %{:fst => {1,:output,1}, :snd => {2,:output,1}, :content => "done"},
+																					 %{:fst => {2,:output,1}, :snd => {3,:output,1}, :content => "done"},
+																					 %{:fst => {2,:input,1}, :snd => {3,:input,1}, :content => "50p"}
 																				 ]
 	end
 

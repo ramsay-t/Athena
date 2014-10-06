@@ -1,7 +1,20 @@
 defmodule Intratrace do
 	def get_intras(trace) do
-		# FIXME content!
-		[]
+		enumerated = List.zip([:lists.seq(1,length(trace)),trace])
+		get_intras_from_enumerated(hd(enumerated),tl(enumerated),[])
+	end
+
+	defp get_intras_from_enumerated(_,[],matches) do
+		Enum.reverse(matches)
+	end
+	defp get_intras_from_enumerated({n1,e1}, others,matches) do
+		res = Enum.concat(Enum.map(others, fn({n2,e2}) ->
+															 matches = get_intras_from_pair(e1,e2)
+															 Enum.map(matches, fn ({{io1,p1},{io2,p2},content}) ->
+																											%{:fst => {n1,io1,p1}, :snd => {n2,io2,p2}, :content => content}
+																								 end)
+													 end))
+		get_intras_from_enumerated(hd(others),tl(others),res ++ matches)
 	end
 
 	def get_intras_from_pair(e1,e2) do
@@ -30,13 +43,11 @@ defmodule Intratrace do
 	end
 	defp get_intras_from_one_pair_of_strings({io1,n1,val1},{io2,n2,val2}) do
 		matches = get_all_string_matches(val1,val2,[])
-		IO.puts "Matches of " <> val1 <> " vs " <> val2 <> " : "
-		IO.puts matches
 		Enum.map(matches, fn (m) -> {{io1,n1},{io2,n2},m} end)
 	end
 
 	defp get_all_string_matches(val1,val2,matches) do
-			z3str = "(declare-variable p1 String)
+		z3str = "(declare-variable p1 String)
 (declare-variable p2 String)
 
 (declare-variable content String)
@@ -66,20 +77,22 @@ defmodule Intratrace do
 )))
 
 (assert (> len 1))
-(assert (= p1 \"" <> val1 <> "\"))
-(assert (= p2 \"" <> val2 <> "\"))
+(assert (= p1 \"1" <> val1 <> "1\"))
+(assert (= p2 \"2" <> val2 <> "2\"))
 "
-		res = EZ3Str.runZ3Str(z3str)
-		if res[:SAT] do
+		extras = Enum.join(Enum.map(matches,fn(m) -> "(assert (not (= content \"" <> m <> "\")))\n" end))
+		res = EZ3Str.runZ3Str(z3str <> extras)
+		case res[:SAT] do
+			true ->
 				get_all_string_matches(val1,val2,[res[:content] | matches])
-		else
-			case res[:error] do
-				nil ->
-					Enum.reverse(matches)
-				_ -> 
-					IO.puts "Z3Str error for \"" <> val1 <> "\" vs \"" <> val2 <> "\": " <> res[:error]
-					Enum.reverse(matches)
-			end
+			_ ->
+				case res[:error] do
+					nil ->
+						Enum.reverse(matches)
+					_ -> 
+						IO.puts "Z3Str error for \"" <> val1 <> "\" vs \"" <> val2 <> "\": " <> res[:error]
+						Enum.reverse(matches)
+				end
 		end
 	end
 end
