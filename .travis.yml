@@ -19,7 +19,7 @@ before_install:
    - cd Z3-str_20140720
    - sed -i 's|Z3_path = .*|Z3_path = '`pwd`'/../z3|' Makefile
    - make
-   - sed -i 's|solver = .*|solver = "'`pwd`'/../z3/bin/external/z3"|' Z3-str.py
+   - sed -i 's|solver = .*|solver = "'`pwd`'/str"|' Z3-str.py
    - popd
    - Z3-str_20140720/Z3-str.py -f z3-str-test/MatchTest1.z3str
    - git clone https://github.com/elixir-lang/elixir
