@@ -22,6 +22,6 @@ before_install:
    - popd
    - git clone https://github.com/elixir-lang/elixir
    - make -C elixir
-   - sed 's| env: \[z3cmd: "[^\"]*"]| env: \[z3cmd: "'`pwd`'/../Z3-str_20140720"\]|'
+   - sed -i 's| env: \[z3cmd: "[^\"]*"]| env: \[z3cmd: "'`pwd`'/../Z3-str_20140720"\]|' mix.exs 
 before_script: "export PATH=`pwd`/elixir/bin:$PATH"
 script: mix test
