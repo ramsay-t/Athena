@@ -8,7 +8,6 @@ defmodule EZ3Str do
 				tmpfolder = tf
 		end
 		tfile = Path.join([tmpfolder,"athena_z3_str.z3str"])
-		:io.format("~p~n",[tfile])
 		File.write(tfile, statementstring)
 		{result,exitval} = System.cmd(z3cmd,["-f",tfile],[])
 		case exitval do
