@@ -22,6 +22,7 @@ before_install:
    - chmod 777 Z3-str.py
    - chmod 777 str
    - popd
+   - Z3-str_20140720/Z3-str -f z3-str-test/MatchTest1.z3str
    - git clone https://github.com/elixir-lang/elixir
    - make -C elixir
    - chmod +x travis-path-fix.sh
