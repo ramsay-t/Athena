@@ -12,7 +12,7 @@ before_install:
    - ./configure
    - make
    - make a
-   - make test
+   - bin/external/z3 -h
    - popd
    - wget http://downloads.sourceforge.net/project/z3str/Z3-str_20140720.tar.bz2
    - tar -jxf Z3-str_20140720.tar.bz2
