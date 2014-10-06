@@ -1,7 +1,12 @@
 defmodule EZ3Str do
 	def runZ3Str(statementstring) do
 		z3cmd = Application.get_env(:athena, :z3cmd)
-		tmpfolder = System.tmp_dir()
+		case Application.get_env(:athena, :tmp) do
+			nil ->
+				tmpfolder = System.tmp_dir()
+			tf ->
+				tmpfolder = tf
+		end
 		tfile = Path.join([tmpfolder,"athena_z3_str.z3str"])
 		:io.format("~p~n",[tfile])
 		File.write(tfile, statementstring)
