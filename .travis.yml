@@ -19,8 +19,8 @@ before_install:
    - cd Z3-str_20140720
    - sed -i 's|Z3_path = .*|Z3_path = '`pwd`'/../z3|' Makefile
    - make
-   - chmod +x Z3-str.py
-   - chmod +x str
+   - chmod 777 Z3-str.py
+   - chmod 777 str
    - popd
    - git clone https://github.com/elixir-lang/elixir
    - make -C elixir
