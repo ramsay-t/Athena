@@ -35,4 +35,3 @@
 (assert (= p12 "This is the first one"))
 
 
-(assert (not (= start1 2)))
