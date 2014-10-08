@@ -26,5 +26,6 @@ before_install:
    - make -C elixir
    - chmod +x travis-path-fix.sh
    - ./travis-path-fix.sh
+   - mix deps.get
 before_script: "export PATH=`pwd`/elixir/bin:$PATH"
 script: mix test
