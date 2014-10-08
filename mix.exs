@@ -27,6 +27,6 @@ defmodule Athena.Mixfile do
   #
   # Type `mix help deps` for more examples and options
   defp deps do
-    []
+    [{:json, git: "https://github.com/cblage/elixir-json/"}]
   end
 end
