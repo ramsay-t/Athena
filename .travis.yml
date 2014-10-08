@@ -4,7 +4,7 @@ otp_release:
 before_install:
    - sudo apt-get update -qq
    - sudo apt-get install -y dos2unix
-   - wget http://www.dcs.shef.ac.uk/~ramsay/z3-4.1.1.tar.bz2
+   - wget --tries=0 --read-timeout=20 -N -c http://www.dcs.shef.ac.uk/~ramsay/z3-4.1.1.tar.bz2
    - tar -jxf z3-4.1.1.tar.bz2
    - pushd `pwd`
    - cd z3
@@ -13,7 +13,7 @@ before_install:
    - make
    - make a
    - popd
-   - wget http://downloads.sourceforge.net/project/z3str/Z3-str_20140720.tar.bz2
+   - wget --tries=0 --read-timeout=20 -N -c http://downloads.sourceforge.net/project/z3str/Z3-str_20140720.tar.bz2
    - tar -jxf Z3-str_20140720.tar.bz2
    - pushd `pwd`
    - cd Z3-str_20140720
