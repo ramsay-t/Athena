@@ -8,7 +8,7 @@ defmodule Substring do
 	end
 	def common_substrings(s1,s2) do
 		sss = get_common_substrings(s1,s2) ++ get_common_substrings(s2,s1)
-		filtered = Enum.filter(sss,fn({s,n1,n2,len}) -> 
+		filtered = Enum.filter(sss,fn({_,n1,n2,len}) -> 
 																	 # Irrelevant if we could expand either way and still have a substring
 																	 Enum.all?(sss,fn ({_,n1p,n2p,_}) -> not ((n1p == (n1-1)) and (n2p == (n2-1))) end)
 																	 and
@@ -17,10 +17,10 @@ defmodule Substring do
 		Enum.uniq(Enum.map(filtered,fn({s,_,_,_}) -> s end))
 	end
 
-	defp get_common_substrings("",s2) do
+	defp get_common_substrings("",_) do
 		[]
 	end
-	defp get_common_substrings(s1,"") do 
+	defp get_common_substrings(_,"") do 
 		[]
 	end
 	defp get_common_substrings(s1,s2) do
