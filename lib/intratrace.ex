@@ -42,57 +42,11 @@ defmodule Intratrace do
 		[{{io1,n1},{io2,n2},val}]
 	end
 	defp get_intras_from_one_pair_of_strings({io1,n1,val1},{io2,n2,val2}) do
-		matches = get_all_string_matches(val1,val2,[])
+		matches = get_all_string_matches(val1,val2)
 		Enum.map(matches, fn (m) -> {{io1,n1},{io2,n2},m} end)
 	end
 
-	defp get_all_string_matches(val1,val2,matches) do
-		z3str = "(declare-variable p1 String)
-(declare-variable p2 String)
-
-(declare-variable content String)
-(declare-variable start1 Int)
-(declare-variable start2 Int)
-(declare-variable len Int)
-(assert (=
-        (Substring p1 start1 len)
-        (Substring p2 start2 len)
-        )
-)
-
-(assert (=
-        (Substring p1 start1 len)
-        content
-        )
-)
-
-(assert (not (=
-        (Substring p1 (- start1 1) 1)
-        (Substring p2 (- start2 1) 1)
-)))
-
-(assert (not (=
-        (Substring p1 start1 (+ len 1))
-        (Substring p2 start2 (+ len 1))
-)))
-
-(assert (> len 1))
-(assert (= p1 \"1" <> val1 <> "1\"))
-(assert (= p2 \"2" <> val2 <> "2\"))
-"
-		extras = Enum.join(Enum.map(matches,fn(m) -> "(assert (not (= content \"" <> m <> "\")))\n" end))
-		res = EZ3Str.runZ3Str(z3str <> extras)
-		case res[:SAT] do
-			true ->
-				get_all_string_matches(val1,val2,[res[:content] | matches])
-			_ ->
-				case res[:error] do
-					nil ->
-						Enum.reverse(matches)
-					_ -> 
-						IO.puts "Z3Str error for \"" <> val1 <> "\" vs \"" <> val2 <> "\": " <> res[:error]
-						Enum.reverse(matches)
-				end
-		end
+	defp get_all_string_matches(val1,val2) do
+		Enum.uniq(Enum.filter(Substring.common_substrings(val1,val2), fn (v) -> String.length(v) > 1 end))
 	end
 end

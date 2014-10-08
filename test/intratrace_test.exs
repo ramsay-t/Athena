@@ -27,8 +27,8 @@ defmodule IntratraceTest do
   test "One pair multiple intras" do
     assert Intratrace.get_intras_from_pair(e3(),e4()) == [
 																													{{:input,1},{:input,1},"give"},
-																													{{:input,1},{:input,1},"coke"},
-																													{{:input,1},{:input,1},"me"}
+																													{{:input,1},{:input,1},"me"},
+																													{{:input,1},{:input,1},"coke"}
 																												]
   end
 
