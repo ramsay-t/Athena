@@ -18,10 +18,10 @@ defmodule Intratrace do
 	end
 
 	def get_intras_from_pair(e1,e2) do
-		e1ips = to_triple(:input,e1[:inputs])
-		e1ops = to_triple(:output,e1[:outputs])
-		e2ips = to_triple(:input,e2[:inputs])
-		e2ops = to_triple(:output,e2[:outputs])
+		e1ips = to_triple(:input,e1.inputs)
+		e1ops = to_triple(:output,e1.outputs)
+		e2ips = to_triple(:input,e2.inputs)
+		e2ops = to_triple(:output,e2.outputs)
 
 		Enum.concat(Enum.map(Enum.concat([e1ips,e1ops]),fn (e) -> get_intras_from_one_string(e,Enum.concat([e2ips,e2ops])) end))
 		
