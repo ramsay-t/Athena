@@ -35,8 +35,8 @@ defmodule IntratraceTest do
 
 	defp t1() do
 		[%{:label => "select", :inputs => ["coke"], :outputs => ["done"]},
-		 %{:label => "coin", :inputs => ["50p"], :outputs => ["done"]},
-		 %{:label => "coin", :inputs => ["50p"], :outputs => ["done"]},
+		 %{:label => "coin", :inputs => ["50"], :outputs => ["done"]},
+		 %{:label => "coin", :inputs => ["50"], :outputs => ["done"]},
 		 %{:label => "vend", :inputs => [], :outputs => ["coke"]},
 		]
 	end
@@ -56,7 +56,7 @@ defmodule IntratraceTest do
 																					 %{:fst => {1,:output,1}, :snd => {3,:output,1}, :content => "done"},
 																					 %{:fst => {1,:output,1}, :snd => {2,:output,1}, :content => "done"},
 																					 %{:fst => {2,:output,1}, :snd => {3,:output,1}, :content => "done"},
-																					 %{:fst => {2,:input,1}, :snd => {3,:input,1}, :content => "50p"}
+																					 %{:fst => {2,:input,1}, :snd => {3,:input,1}, :content => "50"}
 																				 ]
 	end
 
@@ -65,7 +65,7 @@ defmodule IntratraceTest do
 																														 %{content: "done", fst: {1, :output, 1}, snd: {3, :output, 1}},
 																														 %{content: "done", fst: {1, :output, 1}, snd: {2, :output, 1}}, 
 																														 %{content: "done", fst: {2, :output, 1}, snd: {3, :output, 1}},
-																														 %{content: "50p", fst: {2, :input, 1}, snd: {3, :input, 1}}
+																														 %{content: "50", fst: {2, :input, 1}, snd: {3, :input, 1}}
 																														], 
 																											 2 => []}
 	end
@@ -80,7 +80,7 @@ defmodule IntratraceTest do
 																												%{content: "ok", fst: {1, :input, 1}, snd: {2, :output, 1}},
 																												%{content: "ok", fst: {2, :output, 1}, snd: {4, :output, 1}}, 
 																												%{content: "ok", fst: {2, :output, 1}, snd: {3, :output, 1}},
-																												%{content: "50p", fst: {2, :input, 1}, snd: {3, :input, 1}}, 
+																												%{content: "50", fst: {2, :input, 1}, snd: {3, :input, 1}}, 
 																												%{content: "ok", fst: {3, :output, 1}, snd: {4, :output, 1}}
 																											 ],
 																									2 => [%{content: "ok", fst: {1, :output, 1}, snd: {3, :output, 1}}, 
@@ -93,7 +93,7 @@ defmodule IntratraceTest do
 																												%{content: "ok", fst: {1, :output, 1}, snd: {3, :output, 1}},
 																												%{content: "ok", fst: {1, :output, 1}, snd: {2, :output, 1}}, 
 																												%{content: "ok", fst: {2, :output, 1}, snd: {3, :output, 1}},
-																												%{content: "50p", fst: {2, :input, 1}, snd: {3, :input, 1}}
+																												%{content: "50", fst: {2, :input, 1}, snd: {3, :input, 1}}
 																								 ]
 																								 }
 	end

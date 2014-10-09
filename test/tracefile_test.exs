@@ -3,23 +3,23 @@ defmodule TracefileTest do
 
 	defp t1() do
 		[%{:label => "select", :inputs => ["coke"], :outputs => ["ok"]},
-		 %{:label => "coin", :inputs => ["50p"], :outputs => ["ok"]},
-		 %{:label => "coin", :inputs => ["50p"], :outputs => ["ok"]},
+		 %{:label => "coin", :inputs => ["50"], :outputs => ["ok"]},
+		 %{:label => "coin", :inputs => ["50"], :outputs => ["ok"]},
 		 %{:label => "vend", :inputs => [], :outputs => ["coke"]},
 		]
 	end
 
 	defp t2() do
 		[%{:label => "select", :inputs => ["coke"], :outputs => ["ok"]},
-		 %{:label => "coin", :inputs => ["£1"], :outputs => ["ok"]},
+		 %{:label => "coin", :inputs => ["100"], :outputs => ["ok"]},
 		 %{:label => "vend", :inputs => [], :outputs => ["coke"]},
 		]
 	end
 
 	defp t3() do
 		[%{:label => "select", :inputs => ["pepsi"], :outputs => ["ok"]},
-		 %{:label => "coin", :inputs => ["50p"], :outputs => ["ok"]},
-		 %{:label => "coin", :inputs => ["50p"], :outputs => ["ok"]},
+		 %{:label => "coin", :inputs => ["50"], :outputs => ["ok"]},
+		 %{:label => "coin", :inputs => ["50"], :outputs => ["ok"]},
 		 %{:label => "vend", :inputs => [], :outputs => ["pepsi"]},
 		]
 	end
