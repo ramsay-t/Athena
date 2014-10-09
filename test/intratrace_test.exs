@@ -60,4 +60,42 @@ defmodule IntratraceTest do
 																				 ]
 	end
 
+	test "Make intra set" do
+		assert Intratrace.get_intra_set([t1(),t3()]) ==  %{1 => [%{content: "coke", fst: {1, :input, 1}, snd: {4, :output, 1}}, 
+																														 %{content: "done", fst: {1, :output, 1}, snd: {3, :output, 1}},
+																														 %{content: "done", fst: {1, :output, 1}, snd: {2, :output, 1}}, 
+																														 %{content: "done", fst: {2, :output, 1}, snd: {3, :output, 1}},
+																														 %{content: "50p", fst: {2, :input, 1}, snd: {3, :input, 1}}
+																														], 
+																											 2 => []}
+	end
+
+	test "Make intra set from file" do
+		traces = Tracefile.load_file("sample-traces/vend1.json")
+		assert Intratrace.get_intra_set(traces) ==  %{1 => [%{content: "ok", fst: {1, :output, 1}, snd: {4, :output, 1}}, 
+																												%{content: "coke", fst: {1, :input, 1}, snd: {4, :output, 1}},
+																												%{content: "ok", fst: {1, :output, 1}, snd: {3, :output, 1}}, 
+																												%{content: "ok", fst: {1, :input, 1}, snd: {3, :output, 1}},
+																												%{content: "ok", fst: {1, :output, 1}, snd: {2, :output, 1}}, 
+																												%{content: "ok", fst: {1, :input, 1}, snd: {2, :output, 1}},
+																												%{content: "ok", fst: {2, :output, 1}, snd: {4, :output, 1}}, 
+																												%{content: "ok", fst: {2, :output, 1}, snd: {3, :output, 1}},
+																												%{content: "50p", fst: {2, :input, 1}, snd: {3, :input, 1}}, 
+																												%{content: "ok", fst: {3, :output, 1}, snd: {4, :output, 1}}
+																											 ],
+																									2 => [%{content: "ok", fst: {1, :output, 1}, snd: {3, :output, 1}}, 
+																												%{content: "coke", fst: {1, :input, 1}, snd: {3, :output, 1}},
+																												%{content: "ok", fst: {1, :output, 1}, snd: {2, :output, 1}}, 
+																												%{content: "ok", fst: {1, :input, 1}, snd: {2, :output, 1}},
+																												%{content: "ok", fst: {2, :output, 1}, snd: {3, :output, 1}}
+																											 ],
+																									3 => [%{content: "pepsi", fst: {1, :input, 1}, snd: {4, :output, 1}}, 
+																												%{content: "ok", fst: {1, :output, 1}, snd: {3, :output, 1}},
+																												%{content: "ok", fst: {1, :output, 1}, snd: {2, :output, 1}}, 
+																												%{content: "ok", fst: {2, :output, 1}, snd: {3, :output, 1}},
+																												%{content: "50p", fst: {2, :input, 1}, snd: {3, :input, 1}}
+																								 ]
+																								 }
+	end
+
 end

@@ -27,6 +27,23 @@ defmodule Intratrace do
 		
 	end
 
+	def get_intra_set(traces) do
+		enumerated = List.zip([:lists.seq(1,length(traces)),traces])
+		enintras =Enum.map(enumerated,
+											 fn({n,t}) ->
+													 {n,get_intras(t)}
+											 end
+											)
+		make_intra_set(enintras,%{})
+	end
+
+	defp make_intra_set([],intraset) do
+		intraset
+	end
+	defp make_intra_set([{n,intras} | more],intraset) do
+		make_intra_set(more, Map.put(intraset,n,intras))
+	end
+
 	defp to_triple(_,[]) do
 		[]
 	end
