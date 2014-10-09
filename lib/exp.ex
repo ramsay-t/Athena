@@ -17,6 +17,9 @@ defmodule Exp do
 		{rv,_} = eval(r,bind)
 		{not rv,bind}
 	end
+	def eval({:neq,l,r},bind) do
+		eval({:nt,{:eq,l,r}},bind)
+	end
 
 	# Variables and literals
 	def eval({:v,name},bind) do
@@ -58,6 +61,8 @@ defmodule Exp do
 		{val,Map.put(bind,name,val)}
 	end
 
+
+	# Helper functions
 	defp make_numbers(l,r,bind) do
 				case make_number(l,bind) do
 			false ->

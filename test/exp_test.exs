@@ -22,6 +22,12 @@ defmodule ExpTest do
 		assert Exp.eval({:nt,{:eq,{:v,:x3},{:lit,36}}},bind1) == {true,bind1}
 	end
 
+	test "Ne is just not eq" do
+		assert Exp.eval({:neq,{:v,:x1},{:v,:x2}},bind1) == Exp.eval({:nt,{:eq,{:v,:x1},{:v,:x2}}},bind1)
+		assert Exp.eval({:neq,{:v,:x3},{:lit,1.1}},bind1) == {false,bind1}
+		assert Exp.eval({:neq,{:v,:x3},{:lit,36}},bind1) == {true,bind1}
+	end
+
 	test "Numerical comparison" do
 		assert Exp.eval({:gr,{:v,:x2},{:lit,100}},bind1) == {false,bind1}
 		assert Exp.eval({:ge,{:v,:x2},{:lit,100}},bind1) == {true,bind1}
