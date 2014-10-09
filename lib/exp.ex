@@ -99,4 +99,38 @@ defmodule Exp do
 				end
 		end
 	end
+
+  # String representations
+	def pp({:lit,v}) do
+		"\"" <> v <> "\""
+	end
+	def pp({:v,name}) do
+		:erlang.list_to_binary(:io_lib.format("~w",[name]))		
+	end
+	def pp({:eq,l,r}) do
+		pp(l) <> " = " <> pp(r)
+	end
+	def pp({:neq,l,r}) do
+		pp(l) <> " != " <> pp(r)
+	end
+	def pp({:nt,l}) do
+		<<172 :: utf8>> <> "(" <> pp(l) <> ")"
+	end
+	def pp({:gr,l,r}) do
+		pp(l) <> " > " <> pp(r)
+	end
+	def pp({:ge,l,r}) do
+		pp(l) <> " >= " <> pp(r)
+	end
+	def pp({:lt,l,r}) do
+		pp(l) <> " < " <> pp(r)
+	end
+	def pp({:le,l,r}) do
+		pp(l) <> " =< " <> pp(r)
+	end
+	def pp({:assign,n,r}) do
+		pp({:v,n}) <> " := " <> pp(r)
+	end
+
+
 end

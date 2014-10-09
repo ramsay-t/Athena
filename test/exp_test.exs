@@ -54,6 +54,8 @@ defmodule ExpTest do
 		assert Exp.eval({:assign,:x4,{:assign,:x5,{:v,:x1}}},bind1) == {"coke",%{:x1 => "coke", :x2 => "100", :x3 => "1.1", :x4 => "coke"}}
 	end
 
-
+	test "Pretty print" do
+		assert Exp.pp({:assign,:x1,{:nt,{:gr,{:v,:x2},{:lit,"coke"}}}}) == "x1 := " <> << 172 :: utf8 >> <> "(x2 > \"coke\")"
+	end
 
 end
