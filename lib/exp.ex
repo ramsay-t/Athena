@@ -61,6 +61,32 @@ defmodule Exp do
 		{val,Map.put(bind,name,val)}
 	end
 
+	# Arithmatic
+	def eval({:plus,l,r}, bind) do
+		case make_numbers(l,r,bind) do
+			false -> {false,bind}
+			{lv,rv} -> {lv + rv,bind}
+		end
+	end
+	def eval({:minus,l,r}, bind) do
+		case make_numbers(l,r,bind) do
+			false -> {false,bind}
+			{lv,rv} -> {lv - rv,bind}
+		end
+	end
+	def eval({:multiply,l,r}, bind) do
+		case make_numbers(l,r,bind) do
+			false -> {false,bind}
+			{lv,rv} -> {lv * rv,bind}
+		end
+	end
+	def eval({:divide,l,r}, bind) do
+		case make_numbers(l,r,bind) do
+			false -> {false,bind}
+			{lv,rv} -> {lv / rv,bind}
+		end
+	end
+
 
 	# Helper functions
 	defp make_numbers(l,r,bind) do

@@ -58,4 +58,22 @@ defmodule ExpTest do
 		assert Exp.pp({:assign,:x1,{:nt,{:gr,{:v,:x2},{:lit,"coke"}}}}) == "x1 := " <> << 172 :: utf8 >> <> "(x2 > \"coke\")"
 	end
 
+	test "Aritmetic" do
+		assert Exp.eval({:plus,{:lit,2},{:lit,2}},%{}) == {4,%{}}
+		assert Exp.eval({:minus,{:lit,2},{:lit,2}},%{}) == {0,%{}}
+		assert Exp.eval({:divide,{:lit,2},{:lit,2}},%{}) == {1,%{}}
+		assert Exp.eval({:multiply,{:lit,2},{:lit,2}},%{}) == {4,%{}}
+	end
+
+	test "Aritmetic over variables" do
+		assert Exp.eval({:plus,{:v,:r1},{:v,:i1}},%{:r1 => 4, :i1 => 6}) == {10,%{:r1 => 4, :i1 => 6}}
+		assert Exp.eval({:minus,{:v,:r1},{:v,:i1}},%{:r1 => 4, :i1 => 6}) == {-2,%{:r1 => 4, :i1 => 6}}
+		assert Exp.eval({:divide,{:v,:r1},{:v,:i1}},%{:r1 => 4, :i1 => 6}) == {(4/6),%{:r1 => 4, :i1 => 6}}
+		assert Exp.eval({:multiply,{:v,:r1},{:v,:i1}},%{:r1 => 4, :i1 => 6}) == {24,%{:r1 => 4, :i1 => 6}}
+	end
+
+	test "Arithmetic over unknowns" do
+		assert Exp.eval({:plus,{:v,:r1},{:v,:i1}},%{:r1 => 4, :x1 => 6}) == {false,%{:r1 => 4, :x1 => 6}}
+	end
+
 end
