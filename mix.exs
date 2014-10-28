@@ -13,9 +13,7 @@ defmodule Athena.Mixfile do
   #
   # Type `mix help compile.app` for more information
   def application do
-    [applications: [:logger, :httpoison],
-		 env: [z3cmd: "/Users/ramsay/Z3-str/Z3-str.py"]
-		]
+    [applications: [:logger, :httpoison]]
   end
 
   # Dependencies can be Hex packages:

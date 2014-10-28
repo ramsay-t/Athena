@@ -2,26 +2,6 @@ language: erlang
 otp_release:
    - 17.0
 before_install:
-   - sudo apt-get update -qq
-   - sudo apt-get install -y dos2unix
-   - wget --tries=0 --read-timeout=20 -N -c http://www.dcs.shef.ac.uk/~ramsay/z3-4.1.1.tar.bz2
-   - tar -jxf z3-4.1.1.tar.bz2
-   - pushd `pwd`
-   - cd z3
-   - autoconf
-   - ./configure
-   - make
-   - make a
-   - popd
-   - wget --tries=0 --read-timeout=20 -N -c http://downloads.sourceforge.net/project/z3str/Z3-str_20140720.tar.bz2
-   - tar -jxf Z3-str_20140720.tar.bz2
-   - pushd `pwd`
-   - cd Z3-str_20140720
-   - sed -i 's|Z3_path = .*|Z3_path = '`pwd`'/../z3|' Makefile
-   - make
-   - sed -i 's|solver = .*|solver = "'`pwd`'/str"|' Z3-str.py
-   - popd
-   - Z3-str_20140720/Z3-str.py -f z3-str-test/MatchTest1.z3str
    - git clone https://github.com/elixir-lang/elixir
    - make -C elixir
    - chmod +x travis-path-fix.sh
