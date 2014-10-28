@@ -76,4 +76,18 @@ defmodule ExpTest do
 		assert Exp.eval({:plus,{:v,:r1},{:v,:i1}},%{:r1 => 4, :x1 => 6}) == {false,%{:r1 => 4, :x1 => 6}}
 	end
 
+	test "String concatenation" do
+		assert Exp.eval({:concat,{:lit,"Hello,"},{:lit, " World!"}},%{}) == {"Hello, World!",%{}}
+		assert Exp.eval({:concat,{:lit,"Hello,"},{:v, :r1}},%{:r1 => " World!"}) == {"Hello, World!",%{:r1 => " World!"}}
+		assert Exp.eval({:concat,{:lit,"Total: "},{:plus,{:v, :r1},{:v, :r2}}},%{:r1 => 4, :r2 => "6"}) == {"Total: 10",%{:r1 => 4, :r2 => "6"}}
+	end
+
+	test "Concat has no side effects" do
+		assert Exp.eval({:concat,{:lit,"Total: "},{:assign,:r1,{:lit,7}}},%{:r1 => 6}) == {"Total: 7",%{:r1 => 6}}
+	end
+
+	test "Pretty print concat" do
+		assert Exp.pp({:concat,{:lit,"Hello,"},{:lit, " World!"}}) == "\"Hello,\" <> \" World!\""
+	end
+
 end

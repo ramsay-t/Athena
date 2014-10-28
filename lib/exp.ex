@@ -86,7 +86,11 @@ defmodule Exp do
 			{lv,rv} -> {lv / rv,bind}
 		end
 	end
-
+	def eval({:concat,l,r},bind) do
+		lv = make_string(l,bind)
+		rv = make_string(r,bind)
+		{lv <> rv,bind}
+	end
 
 	# Helper functions
 	defp make_numbers(l,r,bind) do
@@ -126,6 +130,15 @@ defmodule Exp do
 		end
 	end
 
+	def make_string(e,bind) do
+		{ev,_} = eval(e,bind)
+		if String.valid?(ev) do
+			ev
+		else
+			to_string ev
+		end
+	end
+
   # String representations
 	def pp({:lit,v}) do
 		"\"" <> v <> "\""
@@ -157,6 +170,8 @@ defmodule Exp do
 	def pp({:assign,n,r}) do
 		pp({:v,n}) <> " := " <> pp(r)
 	end
-
+	def pp({:concat,l,r}) do
+		pp(l) <> " <> " <> pp(r)
+	end
 
 end
