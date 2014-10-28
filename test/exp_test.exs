@@ -23,9 +23,9 @@ defmodule ExpTest do
 	end
 
 	test "Ne is just not eq" do
-		assert Exp.eval({:neq,{:v,:x1},{:v,:x2}},bind1) == Exp.eval({:nt,{:eq,{:v,:x1},{:v,:x2}}},bind1)
-		assert Exp.eval({:neq,{:v,:x3},{:lit,1.1}},bind1) == {false,bind1}
-		assert Exp.eval({:neq,{:v,:x3},{:lit,36}},bind1) == {true,bind1}
+		assert Exp.eval({:ne,{:v,:x1},{:v,:x2}},bind1) == Exp.eval({:nt,{:eq,{:v,:x1},{:v,:x2}}},bind1)
+		assert Exp.eval({:ne,{:v,:x3},{:lit,1.1}},bind1) == {false,bind1}
+		assert Exp.eval({:ne,{:v,:x3},{:lit,36}},bind1) == {true,bind1}
 	end
 
 	test "Numerical comparison" do
@@ -56,6 +56,8 @@ defmodule ExpTest do
 
 	test "Pretty print" do
 		assert Exp.pp({:assign,:x1,{:nt,{:gr,{:v,:x2},{:lit,"coke"}}}}) == "x1 := " <> << 172 :: utf8 >> <> "(x2 > \"coke\")"
+		assert Exp.pp({:assign,:x1,{:nt,{:v,:x2}}}) == "x1 := " <> << 172 :: utf8 >> <> "x2"
+		assert Exp.pp({:eq,{:ne,{:ge,{:lit,7},{:lit,9}},{:lit,true}},{:eq,{:le,{:lit,4},{:lit,6}},{:lt,{:lit,6},{:lit,8}}}}) == "((7 >= 9) != true) = ((4 =< 6) = (6 < 8))"
 	end
 
 	test "Aritmetic" do
@@ -88,6 +90,12 @@ defmodule ExpTest do
 
 	test "Pretty print concat" do
 		assert Exp.pp({:concat,{:lit,"Hello,"},{:lit, " World!"}}) == "\"Hello,\" <> \" World!\""
+	end
+
+	test "Trivial and non-trivial expressions" do
+		assert Exp.trivial?({:lit,5}) == true
+		assert Exp.trivial?({:v,:r1}) == true
+		assert Exp.trivial?({:eq,{:lit,6},{:lit,7}}) == false
 	end
 
 end

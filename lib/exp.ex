@@ -17,7 +17,7 @@ defmodule Exp do
 		{rv,_} = eval(r,bind)
 		{not rv,bind}
 	end
-	def eval({:neq,l,r},bind) do
+	def eval({:ne,l,r},bind) do
 		eval({:nt,{:eq,l,r}},bind)
 	end
 
@@ -141,37 +141,69 @@ defmodule Exp do
 
   # String representations
 	def pp({:lit,v}) do
-		"\"" <> v <> "\""
+		if String.valid?(v) do
+			"\"" <> v <> "\""
+		else 
+			to_string(v)
+		end
 	end
 	def pp({:v,name}) do
-		:erlang.list_to_binary(:io_lib.format("~w",[name]))		
+		to_string name		
 	end
 	def pp({:eq,l,r}) do
-		pp(l) <> " = " <> pp(r)
+		tpp(l) <> " = " <> tpp(r)
 	end
-	def pp({:neq,l,r}) do
-		pp(l) <> " != " <> pp(r)
+	def pp({:ne,l,r}) do
+		tpp(l) <> " != " <> tpp(r)
 	end
 	def pp({:nt,l}) do
-		<<172 :: utf8>> <> "(" <> pp(l) <> ")"
+		<<172 :: utf8>> <> tpp(l)
 	end
 	def pp({:gr,l,r}) do
-		pp(l) <> " > " <> pp(r)
+		tpp(l) <> " > " <> tpp(r)
 	end
 	def pp({:ge,l,r}) do
-		pp(l) <> " >= " <> pp(r)
+		tpp(l) <> " >= " <> tpp(r)
 	end
 	def pp({:lt,l,r}) do
-		pp(l) <> " < " <> pp(r)
+		tpp(l) <> " < " <> tpp(r)
 	end
 	def pp({:le,l,r}) do
-		pp(l) <> " =< " <> pp(r)
+		tpp(l) <> " =< " <> tpp(r)
 	end
 	def pp({:assign,n,r}) do
-		pp({:v,n}) <> " := " <> pp(r)
+		pp({:v,n}) <> " := " <> tpp(r)
 	end
 	def pp({:concat,l,r}) do
-		pp(l) <> " <> " <> pp(r)
+		tpp(l) <> " <> " <> tpp(r)
+	end
+
+	# Trivial pretty print
+	# This is a wrapper function for pp that adds brackets to things that are
+	# non-trivial
+	def tpp(e) do
+		es = pp(e)
+		if trivial?(e) do
+			es
+		else
+			"(" <> es <> ")"
+		end
+	end
+
+	# Trivial and non-trivial expressions
+	# Crudely, trivial expressions are those that can be pretty printed
+	# without brackets and the meaning is still clear
+	def trivial?({:lit,_}) do
+		true
+	end
+	def trivial?({:v,_}) do
+		true
+	end
+	def trivial?({:nt,_}) do
+		true
+	end
+	def trivial?(e) do
+		false
 	end
 
 end
