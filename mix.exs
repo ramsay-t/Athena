@@ -5,6 +5,7 @@ defmodule Athena.Mixfile do
     [app: :athena,
      version: "0.0.1",
      elixir: "~> 1.1-dev",
+		 test_coverage: [tool: Coverex.Task, log: :error],
      deps: deps]
   end
 
@@ -12,7 +13,7 @@ defmodule Athena.Mixfile do
   #
   # Type `mix help compile.app` for more information
   def application do
-    [applications: [:logger],
+    [applications: [:logger, :httpoison],
 		 env: [z3cmd: "/Users/ramsay/Z3-str/Z3-str.py"]
 		]
   end
@@ -27,6 +28,9 @@ defmodule Athena.Mixfile do
   #
   # Type `mix help deps` for more examples and options
   defp deps do
-    [{:json, git: "https://github.com/cblage/elixir-json/"}]
+    [{:epagoge, git: "https://github.com/ramsay-t/epagoge"},
+		 {:json, git: "https://github.com/cblage/elixir-json/"},
+		 {:coverex, "~> 1.0.0", only: :test}]
   end
+
 end
