@@ -1,11 +1,9 @@
 language: erlang
 otp_release:
+   - 17.1
    - 17.0
 before_install:
    - git clone https://github.com/elixir-lang/elixir
    - make -C elixir
-   - chmod +x travis-path-fix.sh
-   - ./travis-path-fix.sh
-   - export PATH=`pwd`/elixir/bin:$PATH
-   - mix deps.get
+before_script: "export PATH=`pwd`/elixir/bin:$PATH"
 script: mix test
