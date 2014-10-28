@@ -1,4 +1,4 @@
-defmodule Substring do
+defmodule Athena.Substring do
 	
 	def common_substrings("",_) do
 		[]

@@ -1,5 +1,7 @@
-defmodule IntratraceTest do
+defmodule Athena.IntratraceTest do
   use ExUnit.Case
+	alias Athena.Intratrace, as: Intratrace
+	alias Athena.Tracefile, as: Tracefile
 
 	defp e1() do
 		%{:label => "select",:inputs => ["coke"], :outputs => ["done"]}

@@ -1,5 +1,6 @@
-defmodule TracefileTest do
+defmodule Athena.TracefileTest do
   use ExUnit.Case
+	alias Athena.Tracefile, as: Tracefile
 
 	defp t1() do
 		[%{:label => "select", :inputs => ["coke"], :outputs => ["ok"]},

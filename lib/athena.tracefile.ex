@@ -1,4 +1,4 @@
-defmodule Tracefile do
+defmodule Athena.Tracefile do
 	def load_file(file) do
 		{:ok, content} = File.read(file)
 		case JSON.decode(content) do

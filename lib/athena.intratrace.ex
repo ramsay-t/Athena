@@ -1,4 +1,6 @@
-defmodule Intratrace do
+defmodule Athena.Intratrace do
+	alias Athena.Substring, as: Substring 
+
 	def get_intras(trace) do
 		enumerated = List.zip([:lists.seq(1,length(trace)),trace])
 		get_intras_from_enumerated(hd(enumerated),tl(enumerated),[])

@@ -1,5 +1,6 @@
-defmodule SubstringTest do
+defmodule Athena.SubstringTest do
   use ExUnit.Case
+	alias Athena.Substring, as: Substring
 
 	defp s1() do 
 		"coke=ok"
