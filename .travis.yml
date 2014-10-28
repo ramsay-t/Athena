@@ -5,7 +5,7 @@ otp_release:
 before_install:
    - git clone https://github.com/elixir-lang/elixir
    - make -C elixir
-   - export PATH="$PATH:$PWD/vendor/elixir/bin"
+   - export PATH="$PATH:$PWD/elixir/bin"
    - mix local.hex --force
 before_script: "export PATH=`pwd`/elixir/bin:$PATH"
 script: mix test
