@@ -61,7 +61,7 @@ defmodule Athena.LabelTest do
 											 },
 											%{i1: 42},%{r1: 42})
 		== {%{},%{:r1 => 0}}
-		# Broken updates break the system
+		# Invalid updates break the system
 		assert_raise ArgumentError, fn -> 
 																		Label.eval(%{label: "test", 
 																								 guards: [], 
