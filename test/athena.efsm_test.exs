@@ -2,72 +2,92 @@ defmodule Athena.EFSMTest do
   use ExUnit.Case
 	alias Athena.EFSM, as: EFSM
 
-	defp efsm1 do
+	def efsm1 do
 		%{
 			{0,1} => [%{:label => "select", 
-													:guards => [{:eq,{:v,:i1},{:lit,"coke"}}], 
-													:outputs => [], 
-													:updates => []}],
+									:guards => [{:eq,{:v,:i1},{:lit,"coke"}}], 
+									:outputs => [], 
+									:updates => [],
+									:sources => [1,2]
+							 }],
 			{0,7} => [%{:label => "select", 
-													:guards => [{:eq,{:v,:i1},{:lit,"pepsi"}}], 
-													:outputs => [], 
-													:updates => []}],
+									:guards => [{:eq,{:v,:i1},{:lit,"pepsi"}}], 
+									:outputs => [], 
+									:updates => [],
+									:sources => [3]
+							 }],
 			{1,2} => [%{:label => "coin", 
-												:guards => [{:eq,{:v,:i1},{:lit,"50"}}], 
-												:outputs => [{:assign,:o1,{:lit,"50"}}], 
-												:updates => []}],
+									:guards => [{:eq,{:v,:i1},{:lit,"50"}}], 
+									:outputs => [{:assign,:o1,{:lit,"50"}}], 
+									:updates => [],
+									:sources => [1]
+							 }],
 			{1,5} => [%{:label => "coin", 
-												:guards => [{:eq,{:v,:i1},{:lit,"100"}}], 
-												:outputs => [{:assign,:o1,{:lit,"100"}}], 
-												:updates => []}],
+									:guards => [{:eq,{:v,:i1},{:lit,"100"}}], 
+									:outputs => [{:assign,:o1,{:lit,"100"}}], 
+									:updates => [],
+									:sources => [2]
+							 }],
 			{2,3} => [%{:label => "coin", 
-												:guards => [{:eq,{:v,:i1},{:lit,"50"}}], 
-												:outputs => [{:assign,:o1,{:lit,"100"}}], 
-												:updates => []}],
+									:guards => [{:eq,{:v,:i1},{:lit,"50"}}], 
+									:outputs => [{:assign,:o1,{:lit,"100"}}], 
+									:updates => [],
+									:sources => [1]
+							 }],
 			{3,4} => [%{:label => "vend", 
-												:guards => [], 
-												:outputs => [{:assign,:o1,{:lit,"coke"}}], 
-												:updates => []}],
+									:guards => [], 
+									:outputs => [{:assign,:o1,{:lit,"coke"}}], 
+									:updates => [],
+									:sources => [1]
+							 }],
 			{5,6} => [%{:label => "vend", 
-												:guards => [], 
-												:outputs => [{:assign,:o1,{:lit,"coke"}}], 
-												:updates => []}],
+									:guards => [], 
+									:outputs => [{:assign,:o1,{:lit,"coke"}}], 
+									:updates => [],
+									:sources => [2]
+							 }],
 			{7,8} => [%{:label => "coin", 
-												:guards => [{:eq,{:v,:i1},{:lit,"50"}}], 
-												:outputs => [{:assign,:o1,{:lit,"50"}}], 
-												:updates => []}],
+									:guards => [{:eq,{:v,:i1},{:lit,"50"}}], 
+									:outputs => [{:assign,:o1,{:lit,"50"}}], 
+									:updates => [],
+									:sources => [3]
+							 }],
 			{8,9} => [%{:label => "coin", 
-												 :guards => [{:eq,{:v,:i1},{:lit,"50"}}], 
-												 :outputs => [{:assign,:o1,{:lit,"100"}}], 
-												 :updates => []}],
+									:guards => [{:eq,{:v,:i1},{:lit,"50"}}], 
+									:outputs => [{:assign,:o1,{:lit,"100"}}], 
+									:updates => [],
+									:sources => [3]
+							 }],
 			{9,10} => [%{:label => "vend", 
-													:guards => [], 
-													:outputs => [{:assign,:o1,{:lit,"pepsi"}}], 
-													:updates => []}]
+									 :guards => [], 
+									 :outputs => [{:assign,:o1,{:lit,"pepsi"}}], 
+									 :updates => [],
+									 :sources => [3]
+								}]
 		}
 	end
 
-	defp efsm2 do
+	def efsm2 do
 		%{
 			{0,1} => [%{:label => "select",
-										:guards => [],
-										:outputs => [],
-										:updates => [{:assign,:r1,{:v,:i1}},{:assign,:r2,{:lit,0}}]
+									:guards => [],
+									:outputs => [],
+									:updates => [{:assign,:r1,{:v,:i1}},{:assign,:r2,{:lit,0}}]
 							 }],
 			{1,1} => [%{:label => "coin",
-							 :guards => [],
-							 :outputs => [{:assign,:o1,{:plus,{:v,:r2},{:v,:i1}}}],
-							 :updates => [{:assign,:r2,{:plus,{:v,:r2},{:v,:i1}}}]
+									:guards => [],
+									:outputs => [{:assign,:o1,{:plus,{:v,:r2},{:v,:i1}}}],
+									:updates => [{:assign,:r2,{:plus,{:v,:r2},{:v,:i1}}}]
 							 }],
 			{1,2} => [%{:label => "vend",
-							 :guards => [{:ge,{:v,:r2},{:lit,100}}],
-							 :outputs => [{:assign,:o1,{:v,:r1}}],
-							 :updates => []
+									:guards => [{:ge,{:v,:r2},{:lit,100}}],
+									:outputs => [{:assign,:o1,{:v,:r1}}],
+									:updates => []
 							 }]
 		}
 	end
 
-	defp t1 do
+	def t1 do
 		[
 		 %{ label: "select", inputs: ["coke"], outputs: []},
 		 %{ label: "coin", inputs: ["50"], outputs: ["50"]},
@@ -76,7 +96,7 @@ defmodule Athena.EFSMTest do
 		]
 	end
 	
-	defp t2 do
+	def t2 do
 		[
 		 %{ label: "select", inputs: ["coke"], outputs: []},
 		 %{ label: "coin", inputs: ["100"], outputs: ["100"]},
@@ -84,7 +104,7 @@ defmodule Athena.EFSMTest do
 		]
 	end
 	
-	defp t3 do
+	def t3 do
 		[
 		 %{ label: "select", inputs: ["pepsi"], outputs: []},
 		 %{ label: "coin", inputs: ["50"], outputs: ["50"]},
@@ -93,7 +113,7 @@ defmodule Athena.EFSMTest do
 		]
 	end
 	
-	defp tbroken do
+	def tbroken do
 		[
 		 %{ label: "select", inputs: ["pepsi"], outputs: []},
 		 %{ label: "coin", inputs: ["50"], outputs: ["50"]},
@@ -102,7 +122,7 @@ defmodule Athena.EFSMTest do
 		]
 	end
 	
-	defp ts1 do
+	def ts1 do
 		[t1,t2,t3]
 	end
 
@@ -111,7 +131,7 @@ defmodule Athena.EFSMTest do
 	end
 
 	test "Walk an EFSM" do
-		assert EFSM.walk(t1,{0,%{}},efsm1) == {:ok,{4,%{}},[%{}, %{o1: "50"}, %{o1: "100"}, %{o1: "coke"}]}
+		assert EFSM.walk(t1,{0,%{}},efsm1) == {:ok,{4,%{}},[%{}, %{o1: "50"}, %{o1: "100"}, %{o1: "coke"}],[{0,1},{1,2},{2,3},{3,4}]}
 		assert EFSM.walk(tbroken,{0,%{}},efsm1) == {:output_missmatch, 
 																								[%{inputs: ["pepsi"], label: "select", outputs: []}, 
 																								 %{inputs: ["50"], label: "coin", outputs: ["50"]},
@@ -120,18 +140,20 @@ defmodule Athena.EFSMTest do
 																								%{
 																									event: %{inputs: [], label: "vend", outputs: ["coke"]}, 
 																									observed: %{o1: "pepsi"}
-																								 }
+																								 },
+																								[{0,7},{7,8},{8,9}]
 																							 }
 
-		assert EFSM.walk(t1,{0,%{}},efsm2) == {:ok, {2, %{r1: "coke", r2: 100}}, [%{}, %{o1: "50"}, %{o1: "100"}, %{o1: "coke"}]}
-		assert EFSM.walk(t2,{0,%{}},efsm2) == {:ok,{2, %{r1: "coke", r2: 100}}, [%{},%{o1: "100"}, %{o1: "coke"}]}
-		assert EFSM.walk(t3,{0,%{}},efsm2) == {:ok, {2, %{r1: "pepsi", r2: 100}}, [%{}, %{o1: "50"}, %{o1: "100"}, %{o1: "pepsi"}]}
+		assert EFSM.walk(t1,{0,%{}},efsm2) == {:ok, {2, %{r1: "coke", r2: 100}}, [%{}, %{o1: "50"}, %{o1: "100"}, %{o1: "coke"}],[{0,1},{1,1},{1,1},{1,2}]}
+		assert EFSM.walk(t2,{0,%{}},efsm2) == {:ok,{2, %{r1: "coke", r2: 100}}, [%{},%{o1: "100"}, %{o1: "coke"}],[{0,1},{1,1},{1,2}]}
+		assert EFSM.walk(t3,{0,%{}},efsm2) == {:ok, {2, %{r1: "pepsi", r2: 100}}, [%{}, %{o1: "50"}, %{o1: "100"}, %{o1: "pepsi"}],[{0,1},{1,1},{1,1},{1,2}]}
 		assert EFSM.walk(tbroken,{0,%{}},efsm2) == {:output_missmatch,
 																								[%{inputs: ["pepsi"], label: "select", outputs: []}, 
 																								 %{inputs: ["50"], label: "coin", outputs: ["50"]},
 																								 %{inputs: ["50"], label: "coin", outputs: ["100"]}], 
 																								{1, %{r1: "pepsi", r2: 100}},
-																								%{event: %{inputs: [], label: "vend", outputs: ["coke"]}, observed: %{o1: "pepsi"}}
+																								%{event: %{inputs: [], label: "vend", outputs: ["coke"]}, observed: %{o1: "pepsi"}},
+																								[{0,1},{1,1},{1,1}]
 																							 }
 
 	end

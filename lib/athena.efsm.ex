@@ -3,27 +3,48 @@ defmodule Athena.EFSM do
 	alias Athena.Label, as: Label
 
 	def build_pta(traces) do
-		build_pta_step(traces, %{})
+		build_pta_step(List.zip([:lists.seq(1,length(traces)),traces]), %{})
 	end
 
 	defp build_pta_step([],efsm) do
 		efsm
 	end
-	defp build_pta_step([t | ts], efsm) do
+	defp build_pta_step([{tn,t} | ts], efsm) do
 		if get_states(efsm) == [] do
-			build_pta_step(ts,extend(t,0,%{}))
+			build_pta_step(ts,extend(t,tn,0,%{}))
 		else
 			case walk(t,{0,%{}},efsm) do
-				{:ok,_} -> build_pta_step(ts,efsm)
-				{:failed_after,prefix,{state,_}} ->
+				{:ok,_,path} -> build_pta_step(ts,add_source(List.zip([path,t]),tn,{0,%{}},efsm))
+				{:failed_after,prefix,{state,_},path} ->
+					{prefix,suffix} = Enum.split(t,length(prefix))					
+					build_pta_step(ts,extend(suffix,tn,state,add_source(List.zip([path,prefix]),tn,{0,%{}},efsm)))
+				{:output_missmatch,prefix,{state,_},_,_,path} ->
 					{prefix,suffix} = Enum.split(t,length(prefix))
-					build_pta_step(ts,extend(suffix,state,efsm))
-				{:output_missmatch,prefix,{state,_},_,_} ->
-					{prefix,suffix} = Enum.split(t,length(prefix))
-					build_pta_step(ts,extend(suffix,state,efsm))
+					build_pta_step(ts,extend(suffix,tn,state,add_source(List.zip([path,prefix]),tn,{0,%{}},efsm)))
 			end
 		end
 	end
+
+	defp add_source([],_,_,efsm) do
+		efsm
+	end
+	defp add_source([{{s1,s2},e} | ts],tn,{state,bind},efsm) do
+		ips = bind_entries(e[:inputs],"i")
+		newtrans = Enum.map(efsm[{s1,s2}],
+												fn(l) ->
+														if l[:label] == e[:label] do
+															if Label.is_possible?(l,ips,bind) do
+																Map.put(l,:sources,:lists.usort([tn | l[:sources]]))
+															else
+																l
+															end
+														else
+															l
+														end
+												end)
+		Map.put(efsm,{s1,s2},newtrans)
+	end
+
 
 	def get_states(efsm) do
 		:lists.usort(List.foldl(Map.keys(efsm),
@@ -113,13 +134,13 @@ defmodule Athena.EFSM do
 		{:ok,{start,bind}}
 	end
 	def walk(trace,state,efsm) do
-		walk_step(trace,[],[],state,efsm)
+		walk_step(trace,[],[],state,[],efsm)
 	end
 
-	defp walk_step([],outputs,_,{state,bind},_) do
-		{:ok,{state,bind},outputs}
+	defp walk_step([],outputs,_,{state,bind},path,_) do
+		{:ok,{state,bind},outputs,path}
 	end
-	defp walk_step([e | ts],outputs,previous,{start,bind},efsm) do
+	defp walk_step([e | ts],outputs,previous,{start,bind},path,efsm) do
 		ips = bind_entries(e[:inputs],"i")
 		# First, identify any possible transitions
 		case List.foldl(Map.keys(efsm),
@@ -142,7 +163,7 @@ defmodule Athena.EFSM do
 															acc
 														end
 												end) do
-			[] -> {:failed_after,previous,{start,bind}}
+			[] -> {:failed_after,previous,{start,bind},path}
 			[{to,[tran]}] -> 
 				{os,newbind} = Label.eval(tran,ips,bind)
 				osstring = List.foldl(Map.keys(os),
@@ -153,25 +174,25 @@ defmodule Athena.EFSM do
 														 )
 				bindos = bind_entries(e[:outputs],"o")
 				if osstring == bindos do
-					walk_step(ts,outputs ++ [osstring],previous ++ [e],{to,newbind},efsm)
+					walk_step(ts,outputs ++ [osstring],previous ++ [e],{to,newbind},path ++ [{start,to}],efsm)
 				else
-					{:output_missmatch,previous,{start,bind},%{:event => e, :observed => osstring}}
+					{:output_missmatch,previous,{start,bind},%{:event => e, :observed => osstring},path}
 				end
 			_pos -> 
-				{:nondeterministic,{start,bind},e}
+				{:nondeterministic,{start,bind},e,path}
 		end
 	end
 
-	defp extend([],_,efsm) do
+	defp extend([],_,_,efsm) do
 		efsm
 	end
-	defp extend([e | ts],state,efsm) do
+	defp extend([e | ts],tracenum,state,efsm) do
 		# This assumes that states are simply numbered. It will break horribly if they are given more complex names.
 		newstate = case get_states(efsm) do 
 						 [] -> state + 1
 						 states -> hd(Enum.reverse(states)) + 1
 					 end
-		extend(ts,newstate,Map.put(efsm,{state,newstate},[Label.event_to_label(e)]))
+		extend(ts,tracenum,newstate,Map.put(efsm,{state,newstate},[Map.put(Label.event_to_label(e),:sources,[tracenum])]))
 	end
 
 	defp bind_entries(ips,prefix) do
