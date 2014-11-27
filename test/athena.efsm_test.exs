@@ -8,61 +8,61 @@ defmodule Athena.EFSMTest do
 									:guards => [{:eq,{:v,:i1},{:lit,"coke"}}], 
 									:outputs => [], 
 									:updates => [],
-									:sources => [1,2]
+									:sources => [%{trace: 1,event: 1},%{trace: 2,event: 1}]
 							 }],
 			{0,7} => [%{:label => "select", 
 									:guards => [{:eq,{:v,:i1},{:lit,"pepsi"}}], 
 									:outputs => [], 
 									:updates => [],
-									:sources => [3]
+									:sources => [%{trace: 3, event: 1}]
 							 }],
 			{1,2} => [%{:label => "coin", 
 									:guards => [{:eq,{:v,:i1},{:lit,"50"}}], 
 									:outputs => [{:assign,:o1,{:lit,"50"}}], 
 									:updates => [],
-									:sources => [1]
+									:sources => [%{trace: 1,event: 2}]
 							 }],
 			{1,5} => [%{:label => "coin", 
 									:guards => [{:eq,{:v,:i1},{:lit,"100"}}], 
 									:outputs => [{:assign,:o1,{:lit,"100"}}], 
 									:updates => [],
-									:sources => [2]
+									:sources => [%{trace: 2, event: 2}]
 							 }],
 			{2,3} => [%{:label => "coin", 
 									:guards => [{:eq,{:v,:i1},{:lit,"50"}}], 
 									:outputs => [{:assign,:o1,{:lit,"100"}}], 
 									:updates => [],
-									:sources => [1]
+									:sources => [%{trace: 1, event: 3}]
 							 }],
 			{3,4} => [%{:label => "vend", 
 									:guards => [], 
 									:outputs => [{:assign,:o1,{:lit,"coke"}}], 
 									:updates => [],
-									:sources => [1]
+									:sources => [%{trace: 1, event: 4}]
 							 }],
 			{5,6} => [%{:label => "vend", 
 									:guards => [], 
 									:outputs => [{:assign,:o1,{:lit,"coke"}}], 
 									:updates => [],
-									:sources => [2]
+									:sources => [%{trace: 2, event: 3}]
 							 }],
 			{7,8} => [%{:label => "coin", 
 									:guards => [{:eq,{:v,:i1},{:lit,"50"}}], 
 									:outputs => [{:assign,:o1,{:lit,"50"}}], 
 									:updates => [],
-									:sources => [3]
+									:sources => [%{trace: 3, event: 2}]
 							 }],
 			{8,9} => [%{:label => "coin", 
 									:guards => [{:eq,{:v,:i1},{:lit,"50"}}], 
 									:outputs => [{:assign,:o1,{:lit,"100"}}], 
 									:updates => [],
-									:sources => [3]
+									:sources => [%{trace: 3, event: 3}]
 							 }],
 			{9,10} => [%{:label => "vend", 
 									 :guards => [], 
 									 :outputs => [{:assign,:o1,{:lit,"pepsi"}}], 
 									 :updates => [],
-									 :sources => [3]
+									 :sources => [%{trace: 3, event: 4}]
 								}]
 		}
 	end

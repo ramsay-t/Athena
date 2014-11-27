@@ -11,30 +11,33 @@ defmodule Athena.EFSM do
 	end
 	defp build_pta_step([{tn,t} | ts], efsm) do
 		if get_states(efsm) == [] do
-			build_pta_step(ts,extend(t,tn,0,%{}))
+			build_pta_step(ts,extend(0,t,tn,0,%{}))
 		else
 			case walk(t,{0,%{}},efsm) do
-				{:ok,_,path} -> build_pta_step(ts,add_source(List.zip([path,t]),tn,{0,%{}},efsm))
+				{:ok,_,path} -> build_pta_step(ts,add_source(path,t,tn,efsm))
 				{:failed_after,prefix,{state,_},path} ->
 					{prefix,suffix} = Enum.split(t,length(prefix))					
-					build_pta_step(ts,extend(suffix,tn,state,add_source(List.zip([path,prefix]),tn,{0,%{}},efsm)))
+					build_pta_step(ts,extend(length(prefix),suffix,tn,state,add_source(path,prefix,tn,efsm)))
 				{:output_missmatch,prefix,{state,_},_,_,path} ->
 					{prefix,suffix} = Enum.split(t,length(prefix))
-					build_pta_step(ts,extend(suffix,tn,state,add_source(List.zip([path,prefix]),tn,{0,%{}},efsm)))
+					build_pta_step(ts,extend(length(prefix),suffix,tn,state,add_source(path,prefix,tn,efsm)))
 			end
 		end
 	end
 
-	defp add_source([],_,_,efsm) do
+	defp add_source(path,t,tn,efsm) do
+		add_source_step(List.zip([path,:lists.seq(1,length(t)),t]),tn,{0,%{}},efsm)
+	end
+	defp add_source_step([],_,_,efsm) do
 		efsm
 	end
-	defp add_source([{{s1,s2},e} | ts],tn,{state,bind},efsm) do
+	defp add_source_step([{{s1,s2},n,e} | ts],tn,{state,bind},efsm) do
 		ips = bind_entries(e[:inputs],"i")
 		newtrans = Enum.map(efsm[{s1,s2}],
 												fn(l) ->
 														if l[:label] == e[:label] do
 															if Label.is_possible?(l,ips,bind) do
-																Map.put(l,:sources,:lists.usort([tn | l[:sources]]))
+																Map.put(l,:sources,:lists.usort([%{trace: tn, event: n} | l[:sources]]))
 															else
 																l
 															end
@@ -183,16 +186,19 @@ defmodule Athena.EFSM do
 		end
 	end
 
-	defp extend([],_,_,efsm) do
+	defp extend(offset,trace,tn,start,efsm) do
+		extend_step(List.zip([:lists.seq(offset+1,length(trace)+offset),trace]),tn,start,efsm)
+	end
+	defp extend_step([],_,_,efsm) do
 		efsm
 	end
-	defp extend([e | ts],tracenum,state,efsm) do
+	defp extend_step([{n,e} | ts],tracenum,state,efsm) do
 		# This assumes that states are simply numbered. It will break horribly if they are given more complex names.
 		newstate = case get_states(efsm) do 
 						 [] -> state + 1
 						 states -> hd(Enum.reverse(states)) + 1
 					 end
-		extend(ts,tracenum,newstate,Map.put(efsm,{state,newstate},[Map.put(Label.event_to_label(e),:sources,[tracenum])]))
+		extend_step(ts,tracenum,newstate,Map.put(efsm,{state,newstate},[Map.put(Label.event_to_label(e),:sources,[%{trace: tracenum, event: n}])]))
 	end
 
 	defp bind_entries(ips,prefix) do
