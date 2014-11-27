@@ -57,9 +57,9 @@ defmodule Athena.EFSM do
 			l = l <> "/"
 			if o != "" do
 				l = l <> String.strip(String.strip(o,?[),?])
-				if u != "" do
-					l = l <> u 
-				end
+			end
+			if u != "" do
+				l = l <> u 
 			end
 		end
 		to_string(from) <> " -> " <> to_string(to) <> " [label=<" <> to_string(l) <> ">]\n" <> trans_to_dot(from,to,ts)
@@ -71,7 +71,12 @@ defmodule Athena.EFSM do
 	defp exps_to_dot(exps) do
 		es = Enum.map(exps,
 									fn(e) ->
-											Exp.pp(varnames_to_dot(e))
+											String.replace(
+																		 String.replace(
+																										Exp.pp(varnames_to_dot(e)),
+																												">","&gt;"),
+																						"SUB&gt;",
+																						"SUB>")
 									end)
 		"[" <> Enum.join(es,",") <> "]"
 	end
@@ -140,11 +145,17 @@ defmodule Athena.EFSM do
 			[] -> {:failed_after,previous,{start,bind}}
 			[{to,[tran]}] -> 
 				{os,newbind} = Label.eval(tran,ips,bind)
-				obsos = bind_entries(e[:outputs],"o")
-				if os == obsos do
-					walk_step(ts,outputs ++ [os],previous ++ [e],{to,newbind},efsm)
+				osstring = List.foldl(Map.keys(os),
+																	%{},
+																	fn(name,acc) ->
+																		Map.put(acc,name,to_string(os[name]))	
+																	end
+														 )
+				bindos = bind_entries(e[:outputs],"o")
+				if osstring == bindos do
+					walk_step(ts,outputs ++ [osstring],previous ++ [e],{to,newbind},efsm)
 				else
-					{:output_missmatch,previous,{start,bind},e,os}
+					{:output_missmatch,previous,{start,bind},%{:event => e, :observed => osstring}}
 				end
 			_pos -> 
 				{:nondeterministic,{start,bind},e}
