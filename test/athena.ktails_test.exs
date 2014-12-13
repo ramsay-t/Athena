@@ -114,7 +114,6 @@ defmodule Athena.KTailsTest do
   end
 
 	test "Compare" do
-		:io.format("~w~n",[KTails.compare_all(EFSMTest.efsm1, 4)])
 		assert KTails.compare_all(EFSMTest.efsm1, 1) == %{
 																											{0,1}=>0,{0,2}=>0,{0,3}=>0,{0,4}=>0,{0,5}=>0,{0,6}=>0,{0,7}=>0,{0,8}=>0,{0,9}=>0,{0,10}=>0,
 																											{1,2}=>3.02,{1,3}=>0,{1,4}=>0,{1,5}=>0,{1,6}=>0,{1,7}=>3.02,{1,8}=>3.02,{1,9}=>0,{1,10}=>0,
