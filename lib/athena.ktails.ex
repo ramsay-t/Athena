@@ -39,6 +39,7 @@ defmodule Athena.KTails do
 		end
 	end
 
+	@spec compare_all(Athena.EFSM.t,integer) :: list(%{{String.t,String.t} => float})
 	def compare_all(efsm,k) do
 		tails = get_tails(efsm,k)
 		states = EFSM.get_states(efsm)
@@ -95,5 +96,16 @@ defmodule Athena.KTails do
 										end
 									end
 							end) + compare_exps(es,other)
+	end
+
+	@doc """
+  A basic merge selector that uses K-Tails across all possible pairs of states and returns the highest score.
+  """
+	@spec selector(integer,Athena.EFSM.t) :: {float,{String.t,String.t}}
+	def selector(k,efsm) do
+		vmap = compare_all(efsm,k)
+		scoreset = Enum.map(Map.keys(vmap), fn({a,b}) -> {vmap[{a,b}],{a,b}} end)
+		:io.format("Scores:~n~p~nBEST: ~p~n",[scoreset,hd(Enum.reverse(Enum.sort(scoreset)))])
+		hd(Enum.reverse(Enum.sort(scoreset)))
 	end
 end

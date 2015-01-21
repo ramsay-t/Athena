@@ -2,6 +2,13 @@ defmodule Athena.EFSM do
 	alias Epagoge.Exp, as: Exp
 	alias Athena.Label, as: Label
 
+	@type t :: %{{String.t,String.t} => list(Athena.Label.t)}
+	@type bindings :: %{Epagoge.Exp.varname_t => Epagoge.Exp.value_t}
+
+  @doc """
+  Produce a Prefix Tree Automaton from a list of traces.
+  """
+	@spec build_pta(list(Athena.trace)) :: t
 	def build_pta(traces) do
 		build_pta_step(List.zip([:lists.seq(1,length(traces)),traces]), %{})
 	end
@@ -11,16 +18,20 @@ defmodule Athena.EFSM do
 	end
 	defp build_pta_step([{tn,t} | ts], efsm) do
 		if get_states(efsm) == [] do
-			build_pta_step(ts,extend(0,t,tn,0,%{}))
+			build_pta_step(ts,extend(0,t,tn,"0",%{}))
 		else
-			case walk(t,{0,%{}},efsm) do
-				{:ok,_,path} -> build_pta_step(ts,add_source(path,t,tn,efsm))
+			case walk(t,{"0",%{}},efsm) do
+				{:ok,_state,_outputs,path} -> 
+					#:io.format("Completely included trace:~nFinal state: ~p~nOutputs: ~p~nPath: ~p~n",[_state,_outputs,path])
+					build_pta_step(ts,add_source(path,t,tn,efsm))
 				{:failed_after,prefix,{state,_},path} ->
 					{prefix,suffix} = Enum.split(t,length(prefix))					
 					build_pta_step(ts,extend(length(prefix),suffix,tn,state,add_source(path,prefix,tn,efsm)))
-				{:output_missmatch,prefix,{state,_},_,_,path} ->
+				{:output_missmatch,prefix,{state,_},_,path} ->
 					{prefix,suffix} = Enum.split(t,length(prefix))
 					build_pta_step(ts,extend(length(prefix),suffix,tn,state,add_source(path,prefix,tn,efsm)))
+				{:nondeterministic,{start,bind},e,path} ->
+					raise RuntimeError, message: :io_lib.format("Non-deterministic choice at ~p~n~p~n~p~n",[{start,bind},e,path])
 			end
 		end
 	end
@@ -33,22 +44,28 @@ defmodule Athena.EFSM do
 	end
 	defp add_source_step([{{s1,s2},n,e} | ts],tn,{state,bind},efsm) do
 		ips = bind_entries(e[:inputs],"i")
-		newtrans = Enum.map(efsm[{s1,s2}],
-												fn(l) ->
-														if l[:label] == e[:label] do
-															if Label.is_possible?(l,ips,bind) do
-																Map.put(l,:sources,:lists.usort([%{trace: tn, event: n} | l[:sources]]))
-															else
-																l
-															end
-														else
-															l
-														end
-												end)
-		Map.put(efsm,{s1,s2},newtrans)
+		{newtransrev,nextstate} = List.foldl(efsm[{s1,s2}],
+																			{[],nil},
+																			fn(l,{newtrans,newstate}) ->
+																					if l[:label] == e[:label] do
+																						if Label.is_possible?(l,ips,bind) do
+																							#:io.format("Add source step: <~p> ~p ~nThen: ~p~n",[{s1,s2},l,ts])
+																							{[Map.put(l,:sources,:lists.usort([%{trace: tn, event: n} | l[:sources]]))|newtrans],Label.eval(l,ips,bind)}
+																						else
+																							{[l|newtrans],newstate}
+																						end
+																					else
+																						{[l|newtrans],newstate}
+																					end
+																			end)
+		#:io.format("Newtransrev: ~p~nnextstate: ~p~n",[newtransrev,nextstate])
+		add_source_step(ts,tn,nextstate,Map.put(efsm,{s1,s2},Enum.reverse(newtransrev)))
 	end
 
-
+  @doc """
+  Returns a sorted list of states in the efsm. 
+  """
+	@spec get_states(t) :: list(String.t)
 	def get_states(efsm) do
 		:lists.usort(List.foldl(Map.keys(efsm),
 									 [],
@@ -58,6 +75,10 @@ defmodule Athena.EFSM do
 							))
 	end
 
+	@doc """
+  Produces graphviz input to display the EFSM.
+  """
+	@spec to_dot(t) :: String.t
 	def to_dot(efsm) do
 		content = List.foldl(Map.keys(efsm),
 														 "",
@@ -86,7 +107,7 @@ defmodule Athena.EFSM do
 				l = l <> u 
 			end
 		end
-		to_string(from) <> " -> " <> to_string(to) <> " [label=<" <> to_string(l) <> ">]\n" <> trans_to_dot(from,to,ts)
+		"\"" <> from <> "\" -> \"" <> to <> "\" [label=<" <> to_string(l) <> ">]\n" <> trans_to_dot(from,to,ts)
 	end
 
 	defp exps_to_dot([]) do
@@ -133,9 +154,18 @@ defmodule Athena.EFSM do
 		o
 	end
 
-	def walk([],{start,bind},_) do
-		{:ok,{start,bind}}
-	end
+	@doc """
+  Attempt to 'walk' the trace over the given EFSM.
+
+  This will start at the initial state and attempt to take transitions that match the events in the trace.
+  If it succeeds (that is, if all the events can be matched to transitions) then it returns the final state,
+  final bindings, the sequence of output bindings, and a 'path' through the machine.
+  """
+	@spec walk(Athena.trace,String.t,t) :: 
+		{:ok,{String.t,bindings},list(bindings),list({String.t,String.t})} 
+	| {:failed_after,String.t,{String.t,bindings},list({String.t,String.t})}
+	| {:output_missmatch,String.t,{String.t,bindings},%{:event => Athena.event, :observed => list(%{Epagoge.Exp.varname_t => String.t})},list({String.t,String.t})}
+	| {:nondeterministic,{String.t,bindings},Athena.event,list({String.t,String.t})}
 	def walk(trace,state,efsm) do
 		walk_step(trace,[],[],state,[],efsm)
 	end
@@ -195,8 +225,11 @@ defmodule Athena.EFSM do
 	defp extend_step([{n,e} | ts],tracenum,state,efsm) do
 		# This assumes that states are simply numbered. It will break horribly if they are given more complex names.
 		newstate = case get_states(efsm) do 
-						 [] -> state + 1
-						 states -> hd(Enum.reverse(states)) + 1
+						 [] -> to_string(elem(Integer.parse(state),0) + 1)
+						 states -> 
+							 # The state names need to be numerically sorted to get the highest
+							 laststate = hd(Enum.reverse(:lists.usort(Enum.map(states,fn(s) -> elem(Integer.parse(s),0) end))))
+							 to_string(laststate + 1)
 					 end
 		extend_step(ts,tracenum,newstate,Map.put(efsm,{state,newstate},[Map.put(Label.event_to_label(e),:sources,[%{trace: tracenum, event: n}])]))
 	end
@@ -207,6 +240,109 @@ defmodule Athena.EFSM do
 													 fn({n,i},acc) ->
 															 Map.put(acc,String.to_atom(prefix <> to_string(n)),i)
 													 end)
+	end
+
+	# State Merging
+	@doc """
+  Merge two states in the EFSM and return the new EFSM.
+
+  As well as merging the states this will merge transitions that now have the same source and destination, identical event names,
+  identical updates and outputs, and where the guards of one 'subsume' the other (see `subsumes?` in `Athena.Label`).
+
+  Where the merge produces non-determinism (due to subsuming guards and matching event names) this will also merge the destination states. 
+  This can lead to further merges as the algorithm 'zips' together chains of states that are now apparently equivilent.
+  """
+	@spec merge(String.t,String.t,t) :: t
+	def merge(s1,s2,efsm) do
+		newname = to_string(s1) <> "," <> to_string(s2)
+		# Replace old elements of the transition matrix with the new state
+		{newefsm,alltrans} = List.foldl(Map.keys(efsm),
+												{%{},[]},
+												fn({from,to},{acc,tt}) ->
+														{newfrom,newtt} = if (from == s1) or (from == s2) do 
+																								{newname,tt ++ Enum.map(efsm[{from,to}], fn(l) -> {to,l} end)}
+																							else 
+																								{from,tt} 
+																							end
+														newto = if (to == s1) or (to == s2) do newname else to end
+														case acc[{newfrom,newto}] do
+															nil ->
+																{Map.put(acc,{newfrom,newto},efsm[{from,to}]),newtt}
+															trans ->
+																{Map.put(acc,{newfrom,newto},trans ++ efsm[{from,to}]),newtt}
+														end
+												end)
+		# Check for non-determinism
+		{detefsm,statemerges} = List.foldl(get_compat_trans(alltrans),
+												 {newefsm,[{s1,s2}]},
+												 fn({{d1,_l1},{d2,_l2}},{accefsm,accmerges}) ->
+														 case Enum.member?(accmerges,{d1,d2}) do
+															 false ->
+																 {nnefsm,submerges} = merge(d1,d2,newefsm)
+																 {nnefsm,accmerges ++ submerges}
+															 true ->
+																{accefsm,accmerges} 
+														 end
+												 end)
+		{merge_trans(detefsm,statemerges),statemerges}
+	end
+
+	defp merge_trans(efsm,statemerges) do
+		newstates = Enum.map(statemerges,fn({a,b}) -> a <> "," <> b end)
+		List.foldl(Map.keys(efsm),
+							%{},
+							fn({from,to},accefsm) ->
+									if Enum.member?(newstates,from) or Enum.member?(newstates,to) do
+										Map.put(accefsm,{from,to},pick_merge_trans(efsm[{from,to}]))
+									else
+										Map.put(accefsm,{from,to},efsm[{from,to}])
+									end
+							end)
+	end
+
+	defp pick_merge_trans([]) do
+		[]
+	end
+	defp pick_merge_trans([t1 | ts]) do
+		#:io.format("Merging ~n~p~n into ~n~p~n --->>> ~n~p~n-----------------------------------~n",[t1,ts,merge_one(t1,ts)])
+		{newts,restts} = merge_one(t1,ts)
+		newts ++ pick_merge_trans(restts)
+	end
+
+	defp merge_one(t, []) do
+		{[t],[]}
+	end
+	defp merge_one(t, [o | os]) do
+		#FIXME label subsumption/merging is hard
+		#      especially merging updates etc.
+		if Athena.Label.subsumes?(t,o) do
+			#:io.format("MERGING~n~p~n~p~n-->>MERGED!~n~p~n--------------------------------",[t,o,Map.put(t,:sources,t[:sources] ++ o[:sources])])
+			{[Map.put(t,:sources,t[:sources] ++ o[:sources])],os}
+		else 
+			if Athena.Label.subsumes?(o,t) do
+			#:io.format("MERGING~n~p~n~p~n-->>MERGED!~n~p~n--------------------------------",[o,t,Map.put(o,:sources,o[:sources] ++ t[:sources])])
+				{[Map.put(o,:sources,o[:sources] ++ t[:sources])],os}
+			else
+				{n,ns} = merge_one(t,os)
+				{[o|n],ns}
+			end
+		end
+	end
+
+	defp get_compat_trans([]) do
+		[]
+	end
+	defp get_compat_trans([{d1,t} | ts]) do
+		cs = List.foldl(ts,
+										[],
+										fn({d2,tt},acc) -> 
+												if Athena.Label.subsumes?(t,tt) do
+													[{{d1,t},{d2,tt}}|acc]
+												else
+													acc
+												end
+										end)
+		cs ++ get_compat_trans(ts)
 	end
 
 end

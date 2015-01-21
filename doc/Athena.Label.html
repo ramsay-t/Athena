@@ -73,6 +73,14 @@
   <td class="summary_signature"><a href="#make_output/1">make_output(arg1)</a></td>
   
 </tr>
+<tr>
+  <td class="summary_signature"><a href="#subsumes?/2">subsumes?(l1, l2)</a></td>
+  
+    <td class="summary_synopsis"><p>Checks whether the first label ‘subsumes’ the second - that is, whether any event that matches the first is 
+certain to match the second</p>
+</td>
+  
+</tr>
 
         </table>
       
@@ -82,7 +90,7 @@
           <h2>Types <a class="to_top_link" href="#content" title="To the top of the page">&uarr;</a></h2>
           <div class="type_detail">
   <p class="typespec" id="t:guard/0">
-    <a href="#t:guard/0">guard</a> :: Epagoge.Exp.t
+    <a href="#t:guard/0">guard</a> :: Epagoge.Exp.bool_t
   </p>
   
 </div>
@@ -192,6 +200,33 @@
   
   <section class="docstring">
     
+  </section>
+  
+</section>
+<section class="detail">
+  <div class="detail_header" id="subsumes?/2">
+    <span class="signature"><strong>subsumes?(l1, l2)</strong></span>
+    <div class="detail_header_links">
+      <span class="detail_type">(function)</span>
+      <a href="#subsumes?/2" class="detail_link" title="Link to this function">#</a>
+      <a class="to_top_link" href="#content" title="To the top of the page">&uarr;</a>
+    </div>
+  </div>
+  
+    <p>Specs:</p>
+    <ul class="spec">
+      
+        <li>subsumes?(<a href="#t:t/0">t</a>, <a href="#t:t/0">t</a>) :: bool</li>
+      
+    </ul>
+  
+  <section class="docstring">
+    <p>Checks whether the first label ‘subsumes’ the second - that is, whether any event that matches the first is 
+certain to match the second.</p>
+<p>This requires that the event names match, and that all of the guard expressions in the second are subsumed by
+at least one in the first. It also requires that the updates and outputs are identical (if sorted), since non-identical
+outputs or updates would produce observable differences, so the transitions can’t be considered equivilent. </p>
+
   </section>
   
 </section>

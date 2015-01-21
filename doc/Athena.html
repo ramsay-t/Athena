@@ -50,7 +50,7 @@
         <h2 id="summary">Summary<span class="detail_header_links"><a class="to_top_link" href="#content" title="To the top of the page">&uarr;</a></span></h2>
         <table class="summary">
           <tr>
-  <td class="summary_signature"><a href="#learn/3">learn(traces, merge_selector, threshold)</a></td>
+  <td class="summary_signature"><a href="#learn/3">learn(traces, merge_selector \\ fn xA -&gt; Athena.KTails.selector(2, xA) end, threshold \\ 1.5)</a></td>
   
     <td class="summary_synopsis"><p>Learn an EFSM from a set of traces. Uses the supplied merge_selector function, 
 which should accept an EFSM and return a pair containing a merge ‘score’ and 
@@ -87,7 +87,7 @@ selected merge falls below the threshold</p>
           <h2>Functions</h2>
           <section class="detail">
   <div class="detail_header" id="learn/3">
-    <span class="signature"><strong>learn(traces, merge_selector, threshold)</strong></span>
+    <span class="signature"><strong>learn(traces, merge_selector \\ fn xA -&gt; Athena.KTails.selector(2, xA) end, threshold \\ 1.5)</strong></span>
     <div class="detail_header_links">
       <span class="detail_type">(function)</span>
       <a href="#learn/3" class="detail_link" title="Link to this function">#</a>
@@ -98,7 +98,7 @@ selected merge falls below the threshold</p>
     <p>Specs:</p>
     <ul class="spec">
       
-        <li>learn([<a href="#t:trace/0">trace</a>], (<a href="Athena.EFSM.html#t:t/0">Athena.EFSM.t</a> -> {float, {integer, integer}}), float) :: <a href="Athena.EFSM.html#t:t/0">Athena.EFSM.t</a></li>
+        <li>learn([<a href="#t:trace/0">trace</a>], (<a href="Athena.EFSM.html#t:t/0">Athena.EFSM.t</a> -> {float, {<a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>, <a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>}}), float) :: <a href="Athena.EFSM.html#t:t/0">Athena.EFSM.t</a></li>
       
     </ul>
   

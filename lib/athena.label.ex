@@ -1,5 +1,9 @@
 defmodule Athena.Label do
 
+	@type guard :: Epagoge.Exp.bool_t
+	@type update :: Epagoge.Exp.assign_t
+	@type t :: %{:label => String.t, :guards => list(guard), :outputs => list(update), :updates => list(update)}
+
 	def make_guard({idx,inpt}) do
 		name = String.to_atom("i" <> to_string(idx))
 		{:eq,{:v,name},{:lit,inpt}}
@@ -49,6 +53,36 @@ defmodule Athena.Label do
 	end
 	def get_new_binding(e,_) do
 		raise ArgumentError, message: "Trying to execute an update that's not an assignment: " <> Epagoge.Exp.pp(e)
+	end
+
+	@doc """
+  Checks whether the first label 'subsumes' the second - that is, whether any event that matches the first is 
+  certain to match the second.
+
+  This requires that the event names match, and that all of the guard expressions in the second are subsumed by
+  at least one in the first. It also requires that the updates and outputs are identical (if sorted), since non-identical
+  outputs or updates would produce observable differences, so the transitions can't be considered equivilent. 
+  """
+	@spec subsumes?(t,t) :: bool
+	def subsumes?(l1,l2) do
+		if (l1[:label] == l2[:label])
+		and (:lists.usort(l1[:updates]) == :lists.usort(l2[:updates]))
+		and (:lists.usort(l1[:outputs]) == :lists.usort(l2[:outputs]))
+		do
+			g = l1[:guards]
+			gg = l2[:guards]
+			if g == gg do
+				true
+			else
+				if Epagoge.Subsumption.subsumes?(g,gg) or Epagoge.Subsumption.subsumes?(gg,g) do
+					true
+				else 
+					false
+				end
+			end
+		else
+			false
+		end
 	end
 
 end

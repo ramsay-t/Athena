@@ -1,7 +1,9 @@
 defmodule AthenaTest do
   use ExUnit.Case
 
-  test "the truth" do
-    assert 1 + 1 == 2
+  test "Learn simple vending machine" do
+    #FIXME
+		#Athena.learn(Athena.EFSMTest.ts1)
   end
+
 end
