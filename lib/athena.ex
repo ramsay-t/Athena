@@ -10,23 +10,22 @@ defmodule Athena do
   selected merge falls below the threshold.
   """
 	@spec learn(list(trace),(Athena.EFSM.t -> {float,{String.t,String.t}}), float) :: Athena.EFSM.t
-	def learn(traces, merge_selector \\ &Athena.KTails.selector(2,&1), threshold \\ 1.5) do
+	def learn(traces, merge_selector \\ &Athena.KTails.selector(1,&1), threshold \\ 1.5) do
 		efsm = Athena.EFSM.build_pta(traces)
 		intras = Athena.Intratrace.get_intra_set(traces)
 
-		#:io.format("PTA: ~n~p~n~nIntras:~n~p~n~n",[efsm,intras])
 		learn_step(efsm, intras, merge_selector, threshold)
 	end
 
 	defp learn_step(efsm, intras, merge_selector, threshold) do
 		{score, {s1,s2}} = merge_selector.(efsm)
 		if score < threshold do
-			EFSM
+			efsm
 		else
 			{newefsm,merges} = Athena.EFSM.merge(s1,s2,efsm)
 			#FIXME check trace deps etc...
 
-			
+			:io.format("Intras:~n~p~n",[intras])
 
 			learn_step(newefsm, intras, merge_selector, threshold)
 		end

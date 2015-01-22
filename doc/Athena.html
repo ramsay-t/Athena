@@ -22,7 +22,7 @@
     </script>
 
     <section id="content">
-      <div class="breadcrumbs">Athena v0.1 &rarr; <a href="overview.html">Overview</a> &rarr; <a href="Athena.html">Athena</a></div>
+      <div class="breadcrumbs">Athena v0.0.1 &rarr; <a href="overview.html">Overview</a> &rarr; <a href="Athena.html">Athena</a></div>
       <h1>
         Athena
         
@@ -45,12 +45,14 @@
       
 
       
+        <a href="https://github.com/ramsay-t/Athena/blob/master/lib/athena.ex#L1" class="view_source">Source</a>
+      
 
       
         <h2 id="summary">Summary<span class="detail_header_links"><a class="to_top_link" href="#content" title="To the top of the page">&uarr;</a></span></h2>
         <table class="summary">
           <tr>
-  <td class="summary_signature"><a href="#learn/3">learn(traces, merge_selector \\ fn xA -&gt; Athena.KTails.selector(2, xA) end, threshold \\ 1.5)</a></td>
+  <td class="summary_signature"><a href="#learn/3">learn(traces, merge_selector \\ fn xA -&gt; Athena.KTails.selector(1, xA) end, threshold \\ 1.5)</a></td>
   
     <td class="summary_synopsis"><p>Learn an EFSM from a set of traces. Uses the supplied merge_selector function, 
 which should accept an EFSM and return a pair containing a merge ‘score’ and 
@@ -87,7 +89,7 @@ selected merge falls below the threshold</p>
           <h2>Functions</h2>
           <section class="detail">
   <div class="detail_header" id="learn/3">
-    <span class="signature"><strong>learn(traces, merge_selector \\ fn xA -&gt; Athena.KTails.selector(2, xA) end, threshold \\ 1.5)</strong></span>
+    <span class="signature"><strong>learn(traces, merge_selector \\ fn xA -&gt; Athena.KTails.selector(1, xA) end, threshold \\ 1.5)</strong></span>
     <div class="detail_header_links">
       <span class="detail_type">(function)</span>
       <a href="#learn/3" class="detail_link" title="Link to this function">#</a>
@@ -109,6 +111,8 @@ the pair of states to merge. The learning will continue until the score of the
 selected merge falls below the threshold.</p>
 
   </section>
+  
+    <a href="https://github.com/ramsay-t/Athena/blob/master/lib/athena.ex#L13" class="view_source">Source</a>
   
 </section>
 
