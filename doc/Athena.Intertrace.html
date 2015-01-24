@@ -43,6 +43,24 @@
       </ul>
 
       
+        <section id="moduledoc" class="docstring">
+          <p>An intertrace dependency is a pair that identifies two traces and intratrace dependencies 
+(see Athena.Intratrace) from each which match, along with the states in the EFSM that 
+have the trace elements as sources on relevent transitions.</p>
+<p>Intratrace dependencies are defined as ‘matching’ if they meet the following criterea:</p>
+<ul>
+<li>They refer to events with the same name
+</li>
+<li>They refer to the same inputs or outputs (e.g. they both refer to i1 in the first place, 
+  and o1 in the second)
+</li>
+<li>There is either a non-empty ‘join’ between the prefixes and suffixes that allows the relevant
+  content to be computed. (see Epagoge.ILP), or the content is the entirety of the IO.
+</li>
+</ul>
+
+        </section>
+      
 
       
         <a href="https://github.com/ramsay-t/Athena/blob/master/lib/athena.intertrace.ex#L1" class="view_source">Source</a>
@@ -52,7 +70,7 @@
         <h2 id="summary">Summary<span class="detail_header_links"><a class="to_top_link" href="#content" title="To the top of the page">&uarr;</a></span></h2>
         <table class="summary">
           <tr>
-  <td class="summary_signature"><a href="#get_inters/3">get_inters(efsm, intras, interesting_state)</a></td>
+  <td class="summary_signature"><a href="#get_inters/3">get_inters(efsm, traceset, intras)</a></td>
   
 </tr>
 
@@ -64,7 +82,7 @@
           <h2>Types <a class="to_top_link" href="#content" title="To the top of the page">&uarr;</a></h2>
           <div class="type_detail">
   <p class="typespec" id="t:t/0">
-    <a href="#t:t/0">t</a> :: {}
+    <a href="#t:t/0">t</a> :: {<a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>, <a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>, {integer, <a href="Athena.Intratrace.html#t:t/0">Athena.Intratrace.t</a>}, {integer, <a href="Athena.Intratrace.html#t:t/0">Athena.Intratrace.t</a>}}
   </p>
   
 </div>
@@ -77,7 +95,7 @@
           <h2>Functions</h2>
           <section class="detail">
   <div class="detail_header" id="get_inters/3">
-    <span class="signature"><strong>get_inters(efsm, intras, interesting_state)</strong></span>
+    <span class="signature"><strong>get_inters(efsm, traceset, intras)</strong></span>
     <div class="detail_header_links">
       <span class="detail_type">(function)</span>
       <a href="#get_inters/3" class="detail_link" title="Link to this function">#</a>
@@ -88,7 +106,7 @@
     <p>Specs:</p>
     <ul class="spec">
       
-        <li>get_inters(<a href="Athena.EFSM.html#t:t/0">Athena.EFSM.t</a>, %{integer => <a href="Athena.Intratrace.html#t:t/0">Athena.Intratrace.t</a>}, <a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>) :: [<a href="#t:t/0">t</a>]</li>
+        <li>get_inters(<a href="Athena.EFSM.html#t:t/0">Athena.EFSM.t</a>, <a href="Athena.html#t:traceset/0">Athena.traceset</a>, %{integer => <a href="Athena.Intratrace.html#t:t/0">Athena.Intratrace.t</a>}) :: [<a href="#t:t/0">t</a>]</li>
       
     </ul>
   
@@ -96,7 +114,7 @@
     
   </section>
   
-    <a href="https://github.com/ramsay-t/Athena/blob/master/lib/athena.intertrace.ex#L7" class="view_source">Source</a>
+    <a href="https://github.com/ramsay-t/Athena/blob/master/lib/athena.intertrace.ex#L21" class="view_source">Source</a>
   
 </section>
 
