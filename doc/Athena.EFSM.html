@@ -52,7 +52,7 @@
         <h2 id="summary">Summary<span class="detail_header_links"><a class="to_top_link" href="#content" title="To the top of the page">&uarr;</a></span></h2>
         <table class="summary">
           <tr>
-  <td class="summary_signature"><a href="#build_pta/1">build_pta(traces)</a></td>
+  <td class="summary_signature"><a href="#build_pta/1">build_pta(traceset)</a></td>
   
     <td class="summary_synopsis"><p>Produce a Prefix Tree Automaton from a list of traces</p>
 </td>
@@ -80,7 +80,7 @@
   
 </tr>
 <tr>
-  <td class="summary_signature"><a href="#walk/3">walk(trace, state, efsm)</a></td>
+  <td class="summary_signature"><a href="#walk/3">walk(trace, arg2, efsm)</a></td>
   
     <td class="summary_synopsis"><p>Attempt to ‘walk’ the trace over the given EFSM</p>
 </td>
@@ -114,7 +114,7 @@
           <h2>Functions</h2>
           <section class="detail">
   <div class="detail_header" id="build_pta/1">
-    <span class="signature"><strong>build_pta(traces)</strong></span>
+    <span class="signature"><strong>build_pta(traceset)</strong></span>
     <div class="detail_header_links">
       <span class="detail_type">(function)</span>
       <a href="#build_pta/1" class="detail_link" title="Link to this function">#</a>
@@ -125,7 +125,7 @@
     <p>Specs:</p>
     <ul class="spec">
       
-        <li>build_pta([<a href="Athena.html#t:trace/0">Athena.trace</a>]) :: <a href="#t:t/0">t</a></li>
+        <li>build_pta(<a href="Athena.html#t:traceset/0">Athena.traceset</a>) :: <a href="#t:t/0">t</a></li>
       
     </ul>
   
@@ -218,7 +218,7 @@ This can lead to further merges as the algorithm ‘zips’ together chains of s
 </section>
 <section class="detail">
   <div class="detail_header" id="walk/3">
-    <span class="signature"><strong>walk(trace, state, efsm)</strong></span>
+    <span class="signature"><strong>walk(trace, arg2, efsm)</strong></span>
     <div class="detail_header_links">
       <span class="detail_type">(function)</span>
       <a href="#walk/3" class="detail_link" title="Link to this function">#</a>
@@ -229,7 +229,7 @@ This can lead to further merges as the algorithm ‘zips’ together chains of s
     <p>Specs:</p>
     <ul class="spec">
       
-        <li>walk(<a href="Athena.html#t:trace/0">Athena.trace</a>, <a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>, <a href="#t:t/0">t</a>) :: {:ok, {<a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>, <a href="#t:bindings/0">bindings</a>}, [<a href="#t:bindings/0">bindings</a>], [{<a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>, <a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>}]} | {:failed_after, <a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>, {<a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>, <a href="#t:bindings/0">bindings</a>}, [{<a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>, <a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>}]} | {:output_missmatch, <a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>, {<a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>, <a href="#t:bindings/0">bindings</a>}, %{event: <a href="Athena.html#t:event/0">Athena.event</a>, observed: [%{Epagoge.Exp.varname_t => <a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>}]}, [{<a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>, <a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>}]} | {:nondeterministic, {<a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>, <a href="#t:bindings/0">bindings</a>}, <a href="Athena.html#t:event/0">Athena.event</a>, [{<a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>, <a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>}]}</li>
+        <li>walk(<a href="Athena.html#t:trace/0">Athena.trace</a>, {<a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>, <a href="#t:bindings/0">bindings</a>}, <a href="#t:t/0">t</a>) :: {:ok, {<a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>, <a href="#t:bindings/0">bindings</a>}, [<a href="#t:bindings/0">bindings</a>], [{<a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>, <a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>}]} | {:failed_after, <a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>, {<a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>, <a href="#t:bindings/0">bindings</a>}, [{<a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>, <a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>}]} | {:output_missmatch, <a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>, {<a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>, <a href="#t:bindings/0">bindings</a>}, %{event: <a href="Athena.html#t:event/0">Athena.event</a>, observed: [%{Epagoge.Exp.varname_t => <a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>}]}, [{<a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>, <a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>}]} | {:nondeterministic, {<a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>, <a href="#t:bindings/0">bindings</a>}, <a href="Athena.html#t:event/0">Athena.event</a>, [{<a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>, <a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>}]}</li>
       
     </ul>
   

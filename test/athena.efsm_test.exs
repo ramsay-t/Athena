@@ -189,7 +189,7 @@ defmodule Athena.EFSMTest do
 	end
 	
 	def ts1 do
-		[t1,t2,t3]
+		[{1,t1},{2,t2},{3,t3}]
 	end
 
 	test "Get states" do
@@ -227,7 +227,7 @@ defmodule Athena.EFSMTest do
 
 	test "Build PTA" do
 		assert EFSM.build_pta(ts1) == efsm1
-		assert EFSM.build_pta([t1|ts1]) == efsm1a
+		assert EFSM.build_pta([{1,t1},{2,t1},{3,t2},{4,t3}]) == efsm1a
 	end
 
 	test "To Dot" do 

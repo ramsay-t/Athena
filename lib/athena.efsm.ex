@@ -8,9 +8,9 @@ defmodule Athena.EFSM do
   @doc """
   Produce a Prefix Tree Automaton from a list of traces.
   """
-	@spec build_pta(list(Athena.trace)) :: t
-	def build_pta(traces) do
-		build_pta_step(List.zip([:lists.seq(1,length(traces)),traces]), %{})
+	@spec build_pta(Athena.traceset) :: t
+	def build_pta(traceset) do
+		build_pta_step(traceset, %{})
 	end
 
 	defp build_pta_step([],efsm) do
@@ -161,13 +161,13 @@ defmodule Athena.EFSM do
   If it succeeds (that is, if all the events can be matched to transitions) then it returns the final state,
   final bindings, the sequence of output bindings, and a 'path' through the machine.
   """
-	@spec walk(Athena.trace,String.t,t) :: 
+	@spec walk(Athena.trace,{String.t,bindings},t) :: 
 		{:ok,{String.t,bindings},list(bindings),list({String.t,String.t})} 
 	| {:failed_after,String.t,{String.t,bindings},list({String.t,String.t})}
 	| {:output_missmatch,String.t,{String.t,bindings},%{:event => Athena.event, :observed => list(%{Epagoge.Exp.varname_t => String.t})},list({String.t,String.t})}
 	| {:nondeterministic,{String.t,bindings},Athena.event,list({String.t,String.t})}
-	def walk(trace,state,efsm) do
-		walk_step(trace,[],[],state,[],efsm)
+	def walk(trace,{state,bindings},efsm) do
+		walk_step(trace,[],[],{state,bindings},[],efsm)
 	end
 
 	defp walk_step([],outputs,_,{state,bind},path,_) do

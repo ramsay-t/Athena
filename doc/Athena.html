@@ -52,6 +52,10 @@
         <h2 id="summary">Summary<span class="detail_header_links"><a class="to_top_link" href="#content" title="To the top of the page">&uarr;</a></span></h2>
         <table class="summary">
           <tr>
+  <td class="summary_signature"><a href="#get_trace/2">get_trace(traceset, idx)</a></td>
+  
+</tr>
+<tr>
   <td class="summary_signature"><a href="#learn/3">learn(traces, merge_selector \\ fn xA -&gt; Athena.KTails.selector(1, xA) end, threshold \\ 1.5)</a></td>
   
     <td class="summary_synopsis"><p>Learn an EFSM from a set of traces. Uses the supplied merge_selector function, 
@@ -59,6 +63,10 @@ which should accept an EFSM and return a pair containing a merge ‘score’ and
 the pair of states to merge. The learning will continue until the score of the
 selected merge falls below the threshold</p>
 </td>
+  
+</tr>
+<tr>
+  <td class="summary_signature"><a href="#make_trace_set/1">make_trace_set(traces)</a></td>
   
 </tr>
 
@@ -80,6 +88,12 @@ selected merge falls below the threshold</p>
   </p>
   
 </div>
+<div class="type_detail">
+  <p class="typespec" id="t:traceset/0">
+    <a href="#t:traceset/0">traceset</a> :: [{integer, <a href="#t:trace/0">trace</a>}]
+  </p>
+  
+</div>
 
         </section>
       
@@ -88,6 +102,30 @@ selected merge falls below the threshold</p>
         <section id="functions_details" class="details_list">
           <h2>Functions</h2>
           <section class="detail">
+  <div class="detail_header" id="get_trace/2">
+    <span class="signature"><strong>get_trace(traceset, idx)</strong></span>
+    <div class="detail_header_links">
+      <span class="detail_type">(function)</span>
+      <a href="#get_trace/2" class="detail_link" title="Link to this function">#</a>
+      <a class="to_top_link" href="#content" title="To the top of the page">&uarr;</a>
+    </div>
+  </div>
+  
+    <p>Specs:</p>
+    <ul class="spec">
+      
+        <li>get_trace(<a href="#t:traceset/0">traceset</a>, integer) :: <a href="#t:trace/0">trace</a></li>
+      
+    </ul>
+  
+  <section class="docstring">
+    
+  </section>
+  
+    <a href="https://github.com/ramsay-t/Athena/blob/master/lib/athena.ex#L42" class="view_source">Source</a>
+  
+</section>
+<section class="detail">
   <div class="detail_header" id="learn/3">
     <span class="signature"><strong>learn(traces, merge_selector \\ fn xA -&gt; Athena.KTails.selector(1, xA) end, threshold \\ 1.5)</strong></span>
     <div class="detail_header_links">
@@ -112,7 +150,31 @@ selected merge falls below the threshold.</p>
 
   </section>
   
-    <a href="https://github.com/ramsay-t/Athena/blob/master/lib/athena.ex#L13" class="view_source">Source</a>
+    <a href="https://github.com/ramsay-t/Athena/blob/master/lib/athena.ex#L14" class="view_source">Source</a>
+  
+</section>
+<section class="detail">
+  <div class="detail_header" id="make_trace_set/1">
+    <span class="signature"><strong>make_trace_set(traces)</strong></span>
+    <div class="detail_header_links">
+      <span class="detail_type">(function)</span>
+      <a href="#make_trace_set/1" class="detail_link" title="Link to this function">#</a>
+      <a class="to_top_link" href="#content" title="To the top of the page">&uarr;</a>
+    </div>
+  </div>
+  
+    <p>Specs:</p>
+    <ul class="spec">
+      
+        <li>make_trace_set([<a href="#t:trace/0">trace</a>]) :: <a href="#t:traceset/0">traceset</a></li>
+      
+    </ul>
+  
+  <section class="docstring">
+    
+  </section>
+  
+    <a href="https://github.com/ramsay-t/Athena/blob/master/lib/athena.ex#L37" class="view_source">Source</a>
   
 </section>
 

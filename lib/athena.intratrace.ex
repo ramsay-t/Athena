@@ -1,8 +1,10 @@
 defmodule Athena.Intratrace do
 	alias Athena.Substring, as: Substring 
 
-	@type t :: %{:fst => {}, :snd => {}, :content => String.t}
+	@type io :: :input | :output
+	@type t :: %{:fst => {integer,io,integer}, :snd => {integer,io,integer}, :content => String.t}
 
+	@spec get_intras(Athena.trace) :: list(t)
 	def get_intras(trace) do
 		enumerated = List.zip([:lists.seq(1,length(trace)),trace])
 		get_intras_from_enumerated(hd(enumerated),tl(enumerated),[])
@@ -21,6 +23,7 @@ defmodule Athena.Intratrace do
 		get_intras_from_enumerated(hd(others),tl(others),res ++ matches)
 	end
 
+	@spec get_intras_from_pair(Athena.event,Athena.event) :: list(t)
 	def get_intras_from_pair(e1,e2) do
 		e1ips = to_triple(:input,e1.inputs)
 		e1ops = to_triple(:output,e1.outputs)
@@ -31,9 +34,9 @@ defmodule Athena.Intratrace do
 		
 	end
 
-	def get_intra_set(traces) do
-		enumerated = List.zip([:lists.seq(1,length(traces)),traces])
-		enintras = Enum.map(enumerated,
+	@spec get_intra_set(Athena.traceset) :: %{integer => list(t)}
+	def get_intra_set(traceset) do
+		enintras = Enum.map(traceset,
 											 fn({n,t}) ->
 													 {n,get_intras(t)}
 											 end

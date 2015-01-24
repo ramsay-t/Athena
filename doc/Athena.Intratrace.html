@@ -52,7 +52,7 @@
         <h2 id="summary">Summary<span class="detail_header_links"><a class="to_top_link" href="#content" title="To the top of the page">&uarr;</a></span></h2>
         <table class="summary">
           <tr>
-  <td class="summary_signature"><a href="#get_intra_set/1">get_intra_set(traces)</a></td>
+  <td class="summary_signature"><a href="#get_intra_set/1">get_intra_set(traceset)</a></td>
   
 </tr>
 <tr>
@@ -71,8 +71,14 @@
         <section id="types_details" class="details_list">
           <h2>Types <a class="to_top_link" href="#content" title="To the top of the page">&uarr;</a></h2>
           <div class="type_detail">
+  <p class="typespec" id="t:io/0">
+    <a href="#t:io/0">io</a> :: :input | :output
+  </p>
+  
+</div>
+<div class="type_detail">
   <p class="typespec" id="t:t/0">
-    <a href="#t:t/0">t</a> :: %{fst: {}, snd: {}, content: <a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>}
+    <a href="#t:t/0">t</a> :: %{fst: {integer, <a href="#t:io/0">io</a>, integer}, snd: {integer, <a href="#t:io/0">io</a>, integer}, content: <a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>}
   </p>
   
 </div>
@@ -85,7 +91,7 @@
           <h2>Functions</h2>
           <section class="detail">
   <div class="detail_header" id="get_intra_set/1">
-    <span class="signature"><strong>get_intra_set(traces)</strong></span>
+    <span class="signature"><strong>get_intra_set(traceset)</strong></span>
     <div class="detail_header_links">
       <span class="detail_type">(function)</span>
       <a href="#get_intra_set/1" class="detail_link" title="Link to this function">#</a>
@@ -93,11 +99,18 @@
     </div>
   </div>
   
+    <p>Specs:</p>
+    <ul class="spec">
+      
+        <li>get_intra_set(<a href="Athena.html#t:traceset/0">Athena.traceset</a>) :: %{integer => [<a href="#t:t/0">t</a>]}</li>
+      
+    </ul>
+  
   <section class="docstring">
     
   </section>
   
-    <a href="https://github.com/ramsay-t/Athena/blob/master/lib/athena.intratrace.ex#L34" class="view_source">Source</a>
+    <a href="https://github.com/ramsay-t/Athena/blob/master/lib/athena.intratrace.ex#L38" class="view_source">Source</a>
   
 </section>
 <section class="detail">
@@ -110,11 +123,18 @@
     </div>
   </div>
   
+    <p>Specs:</p>
+    <ul class="spec">
+      
+        <li>get_intras(<a href="Athena.html#t:trace/0">Athena.trace</a>) :: [<a href="#t:t/0">t</a>]</li>
+      
+    </ul>
+  
   <section class="docstring">
     
   </section>
   
-    <a href="https://github.com/ramsay-t/Athena/blob/master/lib/athena.intratrace.ex#L6" class="view_source">Source</a>
+    <a href="https://github.com/ramsay-t/Athena/blob/master/lib/athena.intratrace.ex#L8" class="view_source">Source</a>
   
 </section>
 <section class="detail">
@@ -127,11 +147,18 @@
     </div>
   </div>
   
+    <p>Specs:</p>
+    <ul class="spec">
+      
+        <li>get_intras_from_pair(<a href="Athena.html#t:event/0">Athena.event</a>, <a href="Athena.html#t:event/0">Athena.event</a>) :: [<a href="#t:t/0">t</a>]</li>
+      
+    </ul>
+  
   <section class="docstring">
     
   </section>
   
-    <a href="https://github.com/ramsay-t/Athena/blob/master/lib/athena.intratrace.ex#L24" class="view_source">Source</a>
+    <a href="https://github.com/ramsay-t/Athena/blob/master/lib/athena.intratrace.ex#L27" class="view_source">Source</a>
   
 </section>
 

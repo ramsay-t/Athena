@@ -63,7 +63,7 @@ defmodule Athena.IntratraceTest do
 	end
 
 	test "Make intra set" do
-		assert Intratrace.get_intra_set([t1(),t3()]) ==  %{1 => [%{content: "coke", fst: {1, :input, 1}, snd: {4, :output, 1}}, 
+		assert Intratrace.get_intra_set([{1,t1()},{2,t3()}]) ==  %{1 => [%{content: "coke", fst: {1, :input, 1}, snd: {4, :output, 1}}, 
 																														 %{content: "done", fst: {1, :output, 1}, snd: {3, :output, 1}},
 																														 %{content: "done", fst: {1, :output, 1}, snd: {2, :output, 1}}, 
 																														 %{content: "done", fst: {2, :output, 1}, snd: {3, :output, 1}},
@@ -74,7 +74,8 @@ defmodule Athena.IntratraceTest do
 
 	test "Make intra set from file" do
 		traces = Tracefile.load_file("sample-traces/vend1.json")
-		assert Intratrace.get_intra_set(traces) ==  %{1 => [%{content: "ok", fst: {1, :output, 1}, snd: {4, :output, 1}}, 
+		traceset = Athena.make_trace_set(traces)
+		assert Intratrace.get_intra_set(traceset) ==  %{1 => [%{content: "ok", fst: {1, :output, 1}, snd: {4, :output, 1}}, 
 																												%{content: "coke", fst: {1, :input, 1}, snd: {4, :output, 1}},
 																												%{content: "ok", fst: {1, :output, 1}, snd: {3, :output, 1}}, 
 																												%{content: "ok", fst: {1, :input, 1}, snd: {3, :output, 1}},
