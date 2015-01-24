@@ -81,7 +81,7 @@ defmodule Athena.Intertrace do
 																			# FIXME - check compatible patterns?
 																			# If the content is identical then the transitions are probably already merged
 																			# FIXME should that be handled here? Probably not.
-																			[ {es1,intra,i2} | acc]
+																			[ {es1,{tn,intra},{tn2,i2}} | acc]
 																		else
 																			acc
 																		end
