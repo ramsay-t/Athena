@@ -235,6 +235,13 @@ defmodule Athena.EFSMTest do
 		assert EFSM.to_dot(efsm2) == "digraph EFSM {\n\"0\" -> \"1\" [label=<select/[r<SUB>1</SUB> := i<SUB>1</SUB>,r<SUB>2</SUB> := 0]>]\n\"1\" -> \"1\" [label=<coin/o<SUB>1</SUB> := (r<SUB>2</SUB> + i<SUB>1</SUB>)[r<SUB>2</SUB> := (r<SUB>2</SUB> + i<SUB>1</SUB>)]>]\n\"1\" -> \"2\" [label=<vend[r<SUB>2</SUB> &gt;= 100]/o<SUB>1</SUB> := r<SUB>1</SUB>>]\n}\n"
 	end
 
+	test "Self merge" do
+		# Merging a state with itself does nothing in a "good" efsm, but it re-runs the 
+		# transition merge tests, so it is used by the Athena transition re-writer
+		{efsm,_} = EFSM.merge("1","1",efsm1)
+		assert efsm == efsm1
+	end
+
 	test "Merge" do
 		# This should merge states 1 and 7, but then the non-determinism checker should "zip" together [some others - specify]
 		{efsm,merges} = EFSM.merge("1","7",efsm1)

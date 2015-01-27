@@ -17,8 +17,8 @@ defmodule Athena.EFSM do
 		efsm
 	end
 	defp build_pta_step([{tn,t} | ts], efsm) do
-		if get_states(efsm) == [] do
-			build_pta_step(ts,extend(0,t,tn,"0",%{}))
+		if efsm == %{} do
+			build_pta_step(ts,extend(0,t,tn,"0",efsm))
 		else
 			case walk(t,{"0",%{}},efsm) do
 				{:ok,_state,_outputs,path} -> 
@@ -254,7 +254,7 @@ defmodule Athena.EFSM do
   """
 	@spec merge(String.t,String.t,t) :: t
 	def merge(s1,s2,efsm) do
-		newname = to_string(s1) <> "," <> to_string(s2)
+		newname = if s1 == s2 do s1 else to_string(s1) <> "," <> to_string(s2) end
 		# Replace old elements of the transition matrix with the new state
 		{newefsm,alltrans} = List.foldl(Map.keys(efsm),
 												{%{},[]},
