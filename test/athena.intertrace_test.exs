@@ -11,9 +11,6 @@ defmodule Athena.IntertraceTest do
 
 	test "Identify matching intertrace deps" do
 		{efsm,merges} = EFSM.merge("1","7",Athena.EFSMTest.efsm1)
-		:io.format("~p~n",[Athena.EFSM.to_dot(efsm)])
-		:io.format("~p~n",[efsm])
-		:io.format("~p~n",[Athena.EFSMTest.ts1])
 
 		intras = Athena.Intratrace.get_intra_set(Athena.EFSMTest.ts1)
 		inters = Inter.get_inters(efsm,Athena.EFSMTest.ts1,intras)

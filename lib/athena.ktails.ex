@@ -105,7 +105,6 @@ defmodule Athena.KTails do
 	def selector(k,efsm) do
 		vmap = compare_all(efsm,k)
 		scoreset = Enum.map(Map.keys(vmap), fn({a,b}) -> {vmap[{a,b}],{a,b}} end)
-		:io.format("Scores:~n~p~nBEST: ~p~n",[scoreset,hd(Enum.reverse(Enum.sort(scoreset)))])
 		hd(Enum.reverse(Enum.sort(scoreset)))
 	end
 end

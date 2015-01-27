@@ -60,7 +60,7 @@ defmodule Athena.Intertrace do
 
 	@spec check_snds(Athena.EFSM.t,Athena.traceset,list({integer, Athena.Intratrace.t})) 
 	:: list({String.t,{integer, Athena.Intratrace.t},{integer, Athena.Intratrace.t}})
-	defp check_snds(efsm,traceset,[]) do
+	defp check_snds(_efsm,_traceset,[]) do
 		[]
 	end
 	defp check_snds(efsm,traceset,[{tn,intra} | intras]) do
@@ -78,9 +78,6 @@ defmodule Athena.Intertrace do
 																		# Check I/O directions match
 																		if elem(intra[:fst],1) == elem(i2[:fst],1)
 																		and elem(intra[:snd],1) == elem(i2[:snd],1) do
-																			# FIXME - check compatible patterns?
-																			# If the content is identical then the transitions are probably already merged
-																			# FIXME should that be handled here? Probably not.
 																			[ {es1,{tn,intra},{tn2,i2}} | acc]
 																		else
 																			acc
