@@ -288,7 +288,13 @@ defmodule Athena.EFSM do
 	end
 
 	defp merge_trans(efsm,statemerges) do
-		newstates = Enum.map(statemerges,fn({a,b}) -> a <> "," <> b end)
+		newstates = Enum.map(statemerges,fn({a,b}) -> 
+																				 if a == b do
+																					 a
+																				 else
+																					 a <> "," <> b 
+																				 end
+																		 end)
 		List.foldl(Map.keys(efsm),
 							%{},
 							fn({from,to},accefsm) ->
@@ -316,11 +322,9 @@ defmodule Athena.EFSM do
 		#FIXME label subsumption/merging is hard
 		#      especially merging updates etc.
 		if Athena.Label.subsumes?(t,o) do
-			#:io.format("MERGING~n~p~n~p~n-->>MERGED!~n~p~n--------------------------------",[t,o,Map.put(t,:sources,t[:sources] ++ o[:sources])])
 			{[Map.put(t,:sources,t[:sources] ++ o[:sources])],os}
 		else 
 			if Athena.Label.subsumes?(o,t) do
-			#:io.format("MERGING~n~p~n~p~n-->>MERGED!~n~p~n--------------------------------",[o,t,Map.put(o,:sources,o[:sources] ++ t[:sources])])
 				{[Map.put(o,:sources,o[:sources] ++ t[:sources])],os}
 			else
 				{n,ns} = merge_one(t,os)

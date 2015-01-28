@@ -138,17 +138,20 @@ defmodule Athena.EFSMTest do
 			{"0","1"} => [%{:label => "select",
 									:guards => [],
 									:outputs => [],
-									:updates => [{:assign,:r1,{:v,:i1}},{:assign,:r2,{:lit,0}}]
+									:updates => [{:assign,:r1,{:v,:i1}},{:assign,:r2,{:lit,0}}],
+									:sources => []
 							 }],
 			{"1","1"} => [%{:label => "coin",
 									:guards => [],
 									:outputs => [{:assign,:o1,{:plus,{:v,:r2},{:v,:i1}}}],
-									:updates => [{:assign,:r2,{:plus,{:v,:r2},{:v,:i1}}}]
+									:updates => [{:assign,:r2,{:plus,{:v,:r2},{:v,:i1}}}],
+									:sources => []
 							 }],
 			{"1","2"} => [%{:label => "vend",
 									:guards => [{:ge,{:v,:r2},{:lit,100}}],
 									:outputs => [{:assign,:o1,{:v,:r1}}],
-									:updates => []
+									:updates => [],
+									:sources => []
 							 }]
 		}
 	end
@@ -242,8 +245,56 @@ defmodule Athena.EFSMTest do
 		assert efsm == efsm1
 	end
 
+	test "Self merge re-checks transitions" do
+		efsmee = Map.put(efsm2,{"1","2"},[
+																			%{:label => "vend",
+																				:guards => [{:ge,{:v,:r2},{:lit,100}}],
+																				:outputs => [{:assign,:o1,{:v,:r1}}],
+																				:updates => [],
+																				:sources => []
+																			 },
+																			%{:label => "vend",
+																				:guards => [{:ge,{:v,:r2},{:lit,100}}],
+																				:outputs => [{:assign,:o1,{:v,:r1}}],
+																				:updates => [],
+																				:sources => []
+																			 }
+										])
+		{efsm,merges} = EFSM.merge("1","1",efsmee)
+		assert efsm == efsm2 
+		{efsm,merges} = EFSM.merge("2","2",efsmee)
+		assert efsm == efsm2 
+
+		# More permissive should subsume less permissive
+		efsmee = Map.put(efsm2,{"1","2"},[
+																			%{:label => "vend",
+																				:guards => [{:ge,{:v,:r2},{:lit,100}}],
+																				:outputs => [{:assign,:o1,{:v,:r1}}],
+																				:updates => [],
+																				:sources => []
+																			 },
+																			%{:label => "vend",
+																				:guards => [],
+																				:outputs => [{:assign,:o1,{:v,:r1}}],
+																				:updates => [],
+																				:sources => []
+																			 }
+										])
+		efsmfixed = Map.put(efsm2,{"1","2"},[%{:label => "vend",
+																					 :guards => [],
+																					 :outputs => [{:assign,:o1,{:v,:r1}}],
+																					 :updates => [],
+																					 :sources => []
+																					}
+											 ])
+		{efsm,merges} = EFSM.merge("1","1",efsmfixed)
+		assert efsm == efsm2 
+		{efsm,merges} = EFSM.merge("2","2",efsmfixed)
+		assert efsm == efsm2 
+	end
+
 	test "Merge" do
-		# This should merge states 1 and 7, but then the non-determinism checker should "zip" together [some others - specify]
+		# This should merge states 1 and 7, but then the non-determinism checker should "zip" together some more
 		{efsm,merges} = EFSM.merge("1","7",efsm1)
 		assert EFSM.merge("1","7",efsm1) == {%{
 																					 {"0","1,7"} => [%{:label => "select", 
