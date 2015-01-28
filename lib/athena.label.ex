@@ -74,7 +74,7 @@ defmodule Athena.Label do
 			if g == gg do
 				true
 			else
-				if Epagoge.Subsumption.subsumes?(g,gg) or Epagoge.Subsumption.subsumes?(gg,g) do
+				if Epagoge.Subsumption.subsumes?(g,gg) do
 					true
 				else 
 					false
