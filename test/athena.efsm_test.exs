@@ -265,6 +265,7 @@ defmodule Athena.EFSMTest do
 		{efsm,merges} = EFSM.merge("2","2",efsmee)
 		assert efsm == efsm2 
 
+
 		# More permissive should subsume less permissive
 		efsmee = Map.put(efsm2,{"1","2"},[
 																			%{:label => "vend",
@@ -287,10 +288,10 @@ defmodule Athena.EFSMTest do
 																					 :sources => []
 																					}
 											 ])
-		{efsm,merges} = EFSM.merge("1","1",efsmfixed)
-		assert efsm == efsm2 
-		{efsm,merges} = EFSM.merge("2","2",efsmfixed)
-		assert efsm == efsm2 
+		{efsm,merges} = EFSM.merge("1","1",efsmee)
+		assert efsm == efsmfixed
+		{efsm,merges} = EFSM.merge("2","2",efsmee)
+		assert efsm == efsmfixed
 	end
 
 	test "Merge" do
