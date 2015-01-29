@@ -350,4 +350,12 @@ defmodule Athena.EFSMTest do
 																					 },[{"1","7"},{"2","8"},{"3","9"}]}
 	end
 	
+	test "Find the start state" do
+		assert EFSM.get_start(efsm1) == "0"
+		assert EFSM.get_start(efsm2) == "0"
+		assert EFSM.get_start(elem(EFSM.merge("0","1",efsm1),0)) == "0,1"
+		assert EFSM.get_start(elem(EFSM.merge("1","0",efsm1),0)) == "1,0"
+	end
+	
+
 end

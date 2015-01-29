@@ -349,4 +349,32 @@ defmodule Athena.EFSM do
 		cs ++ get_compat_trans(ts)
 	end
 
+	@doc """
+  Attempt to determine the start state of the efsm. If state "0" exists then that is assumed to be the start state,
+  otherwise it looks for a merged state that includes "0" in the name (e.g. "0,1")
+  """
+	def get_start(efsm) do
+		find_start(Map.keys(efsm))
+	end
+	defp find_start([{"0",_to} | _more]) do
+		"0"
+	end
+	defp find_start([{_from,"0"} | _more]) do
+		"0"
+	end
+	defp find_start([{from,to} | more]) do
+		if String.starts_with?(from,"0,") or String.ends_with?(from,",0") or String.contains?(from,",0,") do
+			from
+		else 
+			if String.starts_with?(to,"0,") or String.ends_with?(to,",0") or String.contains?(to,",0,") do
+				to
+			else
+				find_start(more)
+			end
+		end
+	end
+	defp find_start([]) do
+		nil
+	end
+
 end
