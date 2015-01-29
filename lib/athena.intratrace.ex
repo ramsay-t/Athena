@@ -1,5 +1,5 @@
 defmodule Athena.Intratrace do
-	alias Athena.Substring, as: Substring 
+	alias Epagoge.Str, as: Str 
 
 	@type io :: :input | :output
 	@type t :: %{:fst => {integer,io,integer}, :snd => {integer,io,integer}, :content => String.t}
@@ -71,6 +71,6 @@ defmodule Athena.Intratrace do
 	end
 
 	defp get_all_string_matches(val1,val2) do
-		Enum.uniq(Enum.filter(Substring.common_substrings(val1,val2), fn (v) -> String.length(v) > 1 end))
+		Enum.uniq(Enum.filter(Str.common_substrings(val1,val2), fn (v) -> String.length(v) > 1 end))
 	end
 end
