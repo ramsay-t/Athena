@@ -123,5 +123,44 @@ defmodule Athena.LabelTest do
 		assert Label.subsumes?(l4,l4) == true
 	end
 
+	defp l5 do
+		%{label: "vend", 
+			guards: [], 
+			outputs: [{:assign,:o1,{:lit,"pepsi"}}],
+			updates: []
+		 }
+	end
+	defp l6 do
+		%{label: "vend", 
+			guards: [], 
+			outputs: [{:assign,:o1,{:lit,"coke"}}],
+			updates: []
+		 }
+	end
+	defp l7 do
+		%{label: "vend", 
+			guards: [], 
+			outputs: [{:assign,:o1,{:v,:r1}}],
+			updates: []
+		 }
+	end
+	defp l8 do
+		%{label: "vend", 
+			guards: [], 
+			outputs: [{:assign,:o1,{:concat,{:lit,"c"},{:v,:r1}}}],
+			updates: []
+		 }
+	end
+	
+	test "Subsumption of literal outputs by computed values" do
+		assert Label.subsumes?(l5,l6) == false
+		assert Label.subsumes?(l6,l5) == false
+
+		assert Label.subsumes?(l7,l5) == true
+		assert Label.subsumes?(l7,l6) == true
+
+		assert Label.subsumes?(l8,l5) == false
+		assert Label.subsumes?(l8,l6) == true
+	end
 
 end

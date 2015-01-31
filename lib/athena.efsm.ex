@@ -107,7 +107,7 @@ defmodule Athena.EFSM do
 				l = l <> u 
 			end
 		end
-		"\"" <> from <> "\" -> \"" <> to <> "\" [label=<" <> to_string(l) <> ">]\n" <> trans_to_dot(from,to,ts)
+		"\"" <> from <> "\" -> \"" <> to <> "\" [ label=<" <> to_string(l) <> " >]\n" <> trans_to_dot(from,to,ts)
 	end
 
 	defp exps_to_dot([]) do

@@ -65,21 +65,45 @@ defmodule Athena.Label do
   """
 	@spec subsumes?(t,t) :: boolean
 	def subsumes?(l1,l2) do
-		if (l1[:label] == l2[:label])
-		and (:lists.usort(l1[:outputs]) == :lists.usort(l2[:outputs]))
-		do
-			if Epagoge.Subsumption.subsumes?(l1[:guards],l2[:guards]) do
-				not Enum.any?(l1[:updates],fn(g) -> 
-																	 Enum.any?(l2[:updates],&conflicts?(g,&1)) 
-															 end)
+		if (l1[:label] == l2[:label]) do
+			if not Enum.any?(l1[:outputs],fn(g) -> 
+																				Enum.any?(l2[:outputs],&conflicts?(g,&1)) 
+																		end) do
+				if Epagoge.Subsumption.subsumes?(l1[:guards],l2[:guards]) do
+					not Enum.any?(l1[:updates],fn(g) -> 
+																				 Enum.any?(l2[:updates],&conflicts?(g,&1)) 
+																		 end)
+				else
+					false
+				end
 			else
 				false
 			end
-		else
-			false
 		end
 	end
 
+	defp conflicts?({:assign,tgt,{:v,_}},{:assign,tgt,{:lit,_}}) do
+		# Special exclusions - this isn't truely a subsumption, but its not a conflict for athena...
+		false
+	end
+	defp conflicts?({:assign,tgt,{:concat,{:lit,pre},more}},{:assign,tgt,{:lit,val}}) do
+		# Special exclusions - this isn't truely a subsumption, but its not a conflict for athena...
+		if String.starts_with?(val,pre) do
+			conflicts?({:assign,tgt,more},
+								 {:assign,tgt,{:lit,String.slice(val,String.length(pre),String.length(val))}})
+		else
+			true
+		end
+	end
+	defp conflicts?({:assign,tgt,{:concat,more,{:lit,suf}}},{:assign,tgt,{:lit,val}}) do
+		# Special exclusions - this isn't truely a subsumption, but its not a conflict for athena...
+		if String.ends_with?(val,suf) do
+			conflicts?({:assign,tgt,more},
+								 {:assign,tgt,{:lit,String.slice(val,(String.length(val)-String.length(suf))-1,String.length(val))}})
+		else
+			true
+		end
+	end
 	defp conflicts?({:assign,tgt,_s1}=l,{:assign,tgt,_s2}=r) do
 		# Assigning to the same value conflicts unless it is subsumed
 		not Epagoge.Subsumption.subsumes?(l,r)
