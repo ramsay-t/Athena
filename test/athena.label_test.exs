@@ -71,4 +71,52 @@ defmodule Athena.LabelTest do
 																							 %{i1: 42},%{r1: 42})
 															 end
 	end
+
+	defp l1 do
+		%{label: "select", 
+			guards: [{:eq,{:v,:i1},{:lit,"coke"}}], 
+			outputs: [],
+			updates: []
+		 }
+	end
+	defp l2 do
+		%{label: "select", 
+			guards: [{:eq,{:v,:i1},{:lit,"pepsi"}}], 
+			outputs: [],
+			updates: []
+		 }
+	end
+	defp l3 do
+		%{label: "select", 
+			guards: [], 
+			outputs: [],
+			updates: [{:assign,:r1,{:v,:i1}}]
+		 }
+	end
+	defp l4 do
+		%{label: "select", 
+			guards: [], 
+			outputs: [],
+			updates: [{:assign,:r1,{:get,"key=",";",{:v,:i1}}}]
+		 }
+	end
+
+	test "Label subsumption" do
+		assert Label.subsumes?(l1,l2) == false
+		assert Label.subsumes?(l2,l1) == false
+		
+		assert Label.subsumes?(l1,l3) == false
+		assert Label.subsumes?(l2,l3) == false
+		assert Label.subsumes?(l3,l1) == true
+		assert Label.subsumes?(l3,l2) == true
+
+		assert Label.subsumes?(l1,l4) == false
+		assert Label.subsumes?(l2,l4) == false
+		assert Label.subsumes?(l3,l4) == true
+		assert Label.subsumes?(l4,l1) == true
+		assert Label.subsumes?(l4,l2) == true
+		assert Label.subsumes?(l4,l3) == false
+	end
+
+
 end

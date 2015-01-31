@@ -63,26 +63,32 @@ defmodule Athena.Label do
   at least one in the first. It also requires that the updates and outputs are identical (if sorted), since non-identical
   outputs or updates would produce observable differences, so the transitions can't be considered equivilent. 
   """
-	@spec subsumes?(t,t) :: bool
+	@spec subsumes?(t,t) :: boolean
 	def subsumes?(l1,l2) do
 		if (l1[:label] == l2[:label])
-		and (:lists.usort(l1[:updates]) == :lists.usort(l2[:updates]))
 		and (:lists.usort(l1[:outputs]) == :lists.usort(l2[:outputs]))
 		do
-			g = l1[:guards]
-			gg = l2[:guards]
-			if g == gg do
-				true
+			if Epagoge.Subsumption.subsumes?(l1[:guards],l2[:guards]) do
+				Enum.any?(l1[:updates],fn(g) -> 
+																	 not Enum.any?(l2[:updates],&conflicts?(g,&1)) 
+															 end)
 			else
-				if Epagoge.Subsumption.subsumes?(g,gg) do
-					true
-				else 
-					false
-				end
+				false
 			end
 		else
 			false
 		end
 	end
 
+	defp conflicts?({:assign,tgt,_s1}=l,{:assign,tgt,_s2}=r) do
+		# Assigning to the same value conflicts unless it is subsumed
+		not Epagoge.Subsumption.subsumes?(l,r)
+	end
+	defp conflicts?({:assign,_t1,_s1},{:assign,_t2,_s2}) do
+		false
+	end
+	# Anything that isn't an assignment definately conflicts...
+	defp conflicts?(_,_) do
+		true
+	end
 end
