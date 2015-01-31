@@ -234,8 +234,8 @@ defmodule Athena.EFSMTest do
 	end
 
 	test "To Dot" do 
-		assert EFSM.to_dot(efsm1) == "digraph EFSM {\n\"0\" -> \"1\" [label=<select[i<SUB>1</SUB> = \"coke\"]>]\n\"0\" -> \"7\" [label=<select[i<SUB>1</SUB> = \"pepsi\"]>]\n\"1\" -> \"2\" [label=<coin[i<SUB>1</SUB> = \"50\"]/o<SUB>1</SUB> := \"50\">]\n\"1\" -> \"5\" [label=<coin[i<SUB>1</SUB> = \"100\"]/o<SUB>1</SUB> := \"100\">]\n\"2\" -> \"3\" [label=<coin[i<SUB>1</SUB> = \"50\"]/o<SUB>1</SUB> := \"100\">]\n\"3\" -> \"4\" [label=<vend/o<SUB>1</SUB> := \"coke\">]\n\"5\" -> \"6\" [label=<vend/o<SUB>1</SUB> := \"coke\">]\n\"7\" -> \"8\" [label=<coin[i<SUB>1</SUB> = \"50\"]/o<SUB>1</SUB> := \"50\">]\n\"8\" -> \"9\" [label=<coin[i<SUB>1</SUB> = \"50\"]/o<SUB>1</SUB> := \"100\">]\n\"9\" -> \"10\" [label=<vend/o<SUB>1</SUB> := \"pepsi\">]\n}\n"
-		assert EFSM.to_dot(efsm2) == "digraph EFSM {\n\"0\" -> \"1\" [label=<select/[r<SUB>1</SUB> := i<SUB>1</SUB>,r<SUB>2</SUB> := 0]>]\n\"1\" -> \"1\" [label=<coin/o<SUB>1</SUB> := (r<SUB>2</SUB> + i<SUB>1</SUB>)[r<SUB>2</SUB> := (r<SUB>2</SUB> + i<SUB>1</SUB>)]>]\n\"1\" -> \"2\" [label=<vend[r<SUB>2</SUB> &gt;= 100]/o<SUB>1</SUB> := r<SUB>1</SUB>>]\n}\n"
+		assert EFSM.to_dot(efsm1) == "digraph EFSM {\n\"0\" -> \"1\" [ label=<select[i<SUB>1</SUB> = \"coke\"] >]\n\"0\" -> \"7\" [ label=<select[i<SUB>1</SUB> = \"pepsi\"] >]\n\"1\" -> \"2\" [ label=<coin[i<SUB>1</SUB> = \"50\"]/o<SUB>1</SUB> := \"50\" >]\n\"1\" -> \"5\" [ label=<coin[i<SUB>1</SUB> = \"100\"]/o<SUB>1</SUB> := \"100\" >]\n\"2\" -> \"3\" [ label=<coin[i<SUB>1</SUB> = \"50\"]/o<SUB>1</SUB> := \"100\" >]\n\"3\" -> \"4\" [ label=<vend/o<SUB>1</SUB> := \"coke\" >]\n\"5\" -> \"6\" [ label=<vend/o<SUB>1</SUB> := \"coke\" >]\n\"7\" -> \"8\" [ label=<coin[i<SUB>1</SUB> = \"50\"]/o<SUB>1</SUB> := \"50\" >]\n\"8\" -> \"9\" [ label=<coin[i<SUB>1</SUB> = \"50\"]/o<SUB>1</SUB> := \"100\" >]\n\"9\" -> \"10\" [ label=<vend/o<SUB>1</SUB> := \"pepsi\" >]\n}\n"
+		assert EFSM.to_dot(efsm2) == "digraph EFSM {\n\"0\" -> \"1\" [ label=<select/[r<SUB>1</SUB> := i<SUB>1</SUB>,r<SUB>2</SUB> := 0] >]\n\"1\" -> \"1\" [ label=<coin/o<SUB>1</SUB> := (r<SUB>2</SUB> + i<SUB>1</SUB>)[r<SUB>2</SUB> := (r<SUB>2</SUB> + i<SUB>1</SUB>)] >]\n\"1\" -> \"2\" [ label=<vend[r<SUB>2</SUB> &gt;= 100]/o<SUB>1</SUB> := r<SUB>1</SUB> >]\n}\n"
 	end
 
 	test "Self merge" do
@@ -243,6 +243,31 @@ defmodule Athena.EFSMTest do
 		# transition merge tests, so it is used by the Athena transition re-writer
 		{efsm,_} = EFSM.merge("1","1",efsm1)
 		assert efsm == efsm1
+
+		{efsm,_} = EFSM.merge("0","0",
+													%{{"0","1"} =>
+															[%{:label => "vend",
+																				:guards => [],
+																				:outputs => [{:assign,:o1,{:v,:r1}}],
+																				:updates => [],
+																				:sources => []
+															}],
+														{"0","2"} =>
+															[%{:label => "vend",
+																				:guards => [],
+																				:outputs => [{:assign,:o1,{:v,:r1}}],
+																				:updates => [],
+																				:sources => []
+															}]
+												 })
+		assert efsm == %{{"0","1,2"} =>
+										 [%{:label => "vend",
+												:guards => [],
+												:outputs => [{:assign,:o1,{:v,:r1}}],
+												:updates => [],
+												:sources => []
+										 }]
+										}
 	end
 
 	test "Self merge re-checks transitions" do
