@@ -116,6 +116,11 @@ defmodule Athena.LabelTest do
 		assert Label.subsumes?(l4,l1) == true
 		assert Label.subsumes?(l4,l2) == true
 		assert Label.subsumes?(l4,l3) == false
+
+		assert Label.subsumes?(l1,l1) == true
+		assert Label.subsumes?(l2,l2) == true
+		assert Label.subsumes?(l3,l3) == true
+		assert Label.subsumes?(l4,l4) == true
 	end
 
 

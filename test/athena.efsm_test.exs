@@ -260,9 +260,9 @@ defmodule Athena.EFSMTest do
 																				:sources => []
 																			 }
 										])
-		{efsm,merges} = EFSM.merge("1","1",efsmee)
+		{efsm,_merges} = EFSM.merge("1","1",efsmee)
 		assert efsm == efsm2 
-		{efsm,merges} = EFSM.merge("2","2",efsmee)
+		{efsm,_merges} = EFSM.merge("2","2",efsmee)
 		assert efsm == efsm2 
 
 
@@ -288,9 +288,9 @@ defmodule Athena.EFSMTest do
 																					 :sources => []
 																					}
 											 ])
-		{efsm,merges} = EFSM.merge("1","1",efsmee)
+		{efsm,_merges} = EFSM.merge("1","1",efsmee)
 		assert efsm == efsmfixed
-		{efsm,merges} = EFSM.merge("2","2",efsmee)
+		{efsm,_merges} = EFSM.merge("2","2",efsmee)
 		assert efsm == efsmfixed
 	end
 

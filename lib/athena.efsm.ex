@@ -42,7 +42,7 @@ defmodule Athena.EFSM do
 	defp add_source_step([],_,_,efsm) do
 		efsm
 	end
-	defp add_source_step([{{s1,s2},n,e} | ts],tn,{state,bind},efsm) do
+	defp add_source_step([{{s1,s2},n,e} | ts],tn,{_state,bind},efsm) do
 		ips = bind_entries(e[:inputs],"i")
 		{newtransrev,nextstate} = List.foldl(efsm[{s1,s2}],
 																			{[],nil},

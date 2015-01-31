@@ -69,8 +69,8 @@ defmodule Athena.Label do
 		and (:lists.usort(l1[:outputs]) == :lists.usort(l2[:outputs]))
 		do
 			if Epagoge.Subsumption.subsumes?(l1[:guards],l2[:guards]) do
-				Enum.any?(l1[:updates],fn(g) -> 
-																	 not Enum.any?(l2[:updates],&conflicts?(g,&1)) 
+				not Enum.any?(l1[:updates],fn(g) -> 
+																	 Enum.any?(l2[:updates],&conflicts?(g,&1)) 
 															 end)
 			else
 				false
