@@ -241,8 +241,9 @@ defmodule Athena.EFSMTest do
 	test "Self merge" do
 		# Merging a state with itself does nothing in a "good" efsm, but it re-runs the 
 		# transition merge tests, so it is used by the Athena transition re-writer
-		{efsm,_} = EFSM.merge("1","1",efsm1)
-		assert efsm == efsm1
+
+		#{efsm,_} = EFSM.merge("1","1",efsm1)
+		#assert efsm == efsm1
 
 		{efsm,_} = EFSM.merge("0","0",
 													%{{"0","1"} =>
@@ -251,11 +252,23 @@ defmodule Athena.EFSMTest do
 																				:outputs => [{:assign,:o1,{:v,:r1}}],
 																				:updates => [],
 																				:sources => []
+															},
+															 %{:label => "vend",
+																				:guards => [],
+																				:outputs => [{:assign,:o1,{:lit,"pepsi"}}],
+																				:updates => [],
+																				:sources => []
 															}],
 														{"0","2"} =>
 															[%{:label => "vend",
 																				:guards => [],
 																				:outputs => [{:assign,:o1,{:v,:r1}}],
+																				:updates => [],
+																				:sources => []
+															},
+															 %{:label => "vend",
+																				:guards => [],
+																				:outputs => [{:assign,:o1,{:lit,"coke"}}],
 																				:updates => [],
 																				:sources => []
 															}]

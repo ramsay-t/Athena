@@ -278,7 +278,7 @@ defmodule Athena.EFSM do
 												 fn({{d1,_l1},{d2,_l2}},{accefsm,accmerges}) ->
 														 case Enum.member?(accmerges,{d1,d2}) do
 															 false ->
-																 {nnefsm,submerges} = merge(d1,d2,newefsm)
+																 {nnefsm,submerges} = merge(d1,d2,accefsm)
 																 {nnefsm,accmerges ++ submerges}
 															 true ->
 																{accefsm,accmerges} 
@@ -310,7 +310,7 @@ defmodule Athena.EFSM do
 		[]
 	end
 	defp pick_merge_trans([t1 | ts]) do
-		#:io.format("Merging ~n~p~n into ~n~p~n --->>> ~n~p~n-----------------------------------~n",[t1,ts,merge_one(t1,ts)])
+		#:io.format("Merging ~n~p~n into ~n~p~n --->>> ~n~p~n-----------------------------------~n",[t1,ts,elem(merge_one(t1,ts),0)])
 		{newts,restts} = merge_one(t1,ts)
 		newts ++ pick_merge_trans(restts)
 	end
