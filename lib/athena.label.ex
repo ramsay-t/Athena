@@ -65,7 +65,7 @@ defmodule Athena.Label do
   """
 	@spec subsumes?(t,t) :: boolean
 	def subsumes?(l1,l2) do
-		if (l1[:label] == l2[:label]) do
+		if l1[:label] == l2[:label] do
 			if not Enum.any?(l1[:outputs],fn(g) -> 
 																				Enum.any?(l2[:outputs],&conflicts?(g,&1)) 
 																		end) do
@@ -79,6 +79,8 @@ defmodule Athena.Label do
 			else
 				false
 			end
+		else
+			false
 		end
 	end
 
