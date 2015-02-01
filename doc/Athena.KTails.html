@@ -60,7 +60,7 @@
 <tr>
   <td class="summary_signature"><a href="#selector/2">selector(k, efsm)</a></td>
   
-    <td class="summary_synopsis"><p>A basic merge selector that uses K-Tails across all possible pairs of states and returns the highest score</p>
+    <td class="summary_synopsis"><p>A basic merge selector that uses K-Tails across all possible pairs of states and returns a sorted list of score</p>
 </td>
   
 </tr>
@@ -127,16 +127,16 @@
     <p>Specs:</p>
     <ul class="spec">
       
-        <li>selector(integer, <a href="Athena.EFSM.html#t:t/0">Athena.EFSM.t</a>) :: {float, {<a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>, <a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>}}</li>
+        <li>selector(integer, <a href="Athena.EFSM.html#t:t/0">Athena.EFSM.t</a>) :: [{float, {<a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>, <a href="http://elixir-lang.org/docs/stable/elixir/String.html#t:t/0">String.t</a>}}]</li>
       
     </ul>
   
   <section class="docstring">
-    <p>A basic merge selector that uses K-Tails across all possible pairs of states and returns the highest score.</p>
+    <p>A basic merge selector that uses K-Tails across all possible pairs of states and returns a sorted list of score.</p>
 
   </section>
   
-    <a href="https://github.com/ramsay-t/Athena/blob/master/lib/athena.ktails.ex#L105" class="view_source">Source</a>
+    <a href="https://github.com/ramsay-t/Athena/blob/master/lib/athena.ktails.ex#L116" class="view_source">Source</a>
   
 </section>
 
