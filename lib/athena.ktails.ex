@@ -54,6 +54,7 @@ defmodule Athena.KTails do
 	end
 
 	defp compare(n,m,tails) do
+		#:io.format("~p vs ~p~n",[n,m])
 		List.foldl(tails[n],
 							 0,
 							 fn(t,acc) ->
@@ -61,22 +62,32 @@ defmodule Athena.KTails do
 							 end)
 	end
 							 
-	defp compare_one([],_) do
+	defp compare_one([],[]) do
 		0
+	end
+	defp compare_one([],_) do
+		-0.5
 	end
 	defp compare_one(_,[]) do
-		0
+		-0.5
 	end
 	defp compare_one([l1 | t1],[l2 | t2]) do
-		if l1[:label] == l2[:label] do
-			1 +
-			compare_exps(l1[:guards],l2[:guards]) +
-			compare_exps(l1[:outputs],l2[:outputs]) + 
-			compare_exps(l1[:updates],l2[:updates]) +
-			compare_one(t1,t2)
-		else
-			compare_one(t1,t2)
+		v = cond do
+			l1 == l2 ->
+				2 + compare_one(t1,t2)
+			Athena.Label.subsumes?(l1,l2) or Athena.Label.subsumes?(l2,l1) ->
+				1.5 + compare_one(t1,t2)
+			l1[:label] == l2[:label] ->
+				1 +
+					compare_exps(l1[:guards],l2[:guards]) +
+					compare_exps(l1[:outputs],l2[:outputs]) + 
+					compare_exps(l1[:updates],l2[:updates]) +
+					compare_one(t1,t2)
+			true ->
+				compare_one(t1,t2) - 2
 		end
+		#:io.format("    ~p vs ~p   ===  ~p~n",[l1[:label],l2[:label],v])
+		v
 	end
 
 	defp compare_exps([],_) do
@@ -87,24 +98,25 @@ defmodule Athena.KTails do
 							 0,
 							fn(o,acc) ->
 									if e == o do
-										0.5 + acc
+										0.1 + acc
 									else
 										if Exp.freevars(e) == Exp.freevars(o) do
-											0.01 + acc
+											acc + 0.01
 										else
-											acc
+											acc - 0.01
 										end
 									end
 							end) + compare_exps(es,other)
 	end
 
 	@doc """
-  A basic merge selector that uses K-Tails across all possible pairs of states and returns the highest score.
+  A basic merge selector that uses K-Tails across all possible pairs of states and returns a sorted list of score.
   """
-	@spec selector(integer,Athena.EFSM.t) :: {float,{String.t,String.t}}
+	@spec selector(integer,Athena.EFSM.t) :: list({float,{String.t,String.t}})
 	def selector(k,efsm) do
 		vmap = compare_all(efsm,k)
 		scoreset = Enum.map(Map.keys(vmap), fn({a,b}) -> {vmap[{a,b}],{a,b}} end)
-		hd(Enum.reverse(Enum.sort(scoreset)))
+		#:io.format("EFSM:~n~p~nScores:~n~p~n~n",[Athena.EFSM.to_dot(efsm),scoreset])
+		Enum.reverse(Enum.sort(scoreset))
 	end
 end

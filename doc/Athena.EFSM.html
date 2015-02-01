@@ -59,6 +59,14 @@
   
 </tr>
 <tr>
+  <td class="summary_signature"><a href="#get_start/1">get_start(efsm)</a></td>
+  
+    <td class="summary_synopsis"><p>Attempt to determine the start state of the efsm. If state “0” exists then that is assumed to be the start state,
+otherwise it looks for a merged state that includes “0” in the name (e.g. “0,1”)</p>
+</td>
+  
+</tr>
+<tr>
   <td class="summary_signature"><a href="#get_states/1">get_states(efsm)</a></td>
   
     <td class="summary_synopsis"><p>Returns a sorted list of states in the efsm</p>
@@ -135,6 +143,25 @@
   </section>
   
     <a href="https://github.com/ramsay-t/Athena/blob/master/lib/athena.efsm.ex#L12" class="view_source">Source</a>
+  
+</section>
+<section class="detail">
+  <div class="detail_header" id="get_start/1">
+    <span class="signature"><strong>get_start(efsm)</strong></span>
+    <div class="detail_header_links">
+      <span class="detail_type">(function)</span>
+      <a href="#get_start/1" class="detail_link" title="Link to this function">#</a>
+      <a class="to_top_link" href="#content" title="To the top of the page">&uarr;</a>
+    </div>
+  </div>
+  
+  <section class="docstring">
+    <p>Attempt to determine the start state of the efsm. If state “0” exists then that is assumed to be the start state,
+otherwise it looks for a merged state that includes “0” in the name (e.g. “0,1”)</p>
+
+  </section>
+  
+    <a href="https://github.com/ramsay-t/Athena/blob/master/lib/athena.efsm.ex#L356" class="view_source">Source</a>
   
 </section>
 <section class="detail">
