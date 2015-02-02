@@ -81,9 +81,20 @@ otherwise it looks for a merged state that includes “0” in the name (e.g. �
   
 </tr>
 <tr>
+  <td class="summary_signature"><a href="#merge/4">merge(s1, s2, efsm, ignore)</a></td>
+  
+</tr>
+<tr>
   <td class="summary_signature"><a href="#to_dot/1">to_dot(efsm)</a></td>
   
     <td class="summary_synopsis"><p>Produces graphviz input to display the EFSM</p>
+</td>
+  
+</tr>
+<tr>
+  <td class="summary_signature"><a href="#walk/2">walk(trace, efsm)</a></td>
+  
+    <td class="summary_synopsis"><p>Attempt to ‘walk’ the trace over the given EFSM</p>
 </td>
   
 </tr>
@@ -161,7 +172,7 @@ otherwise it looks for a merged state that includes “0” in the name (e.g. �
 
   </section>
   
-    <a href="https://github.com/ramsay-t/Athena/blob/master/lib/athena.efsm.ex#L356" class="view_source">Source</a>
+    <a href="https://github.com/ramsay-t/Athena/blob/master/lib/athena.efsm.ex#L368" class="view_source">Source</a>
   
 </section>
 <section class="detail">
@@ -215,7 +226,24 @@ This can lead to further merges as the algorithm ‘zips’ together chains of s
 
   </section>
   
-    <a href="https://github.com/ramsay-t/Athena/blob/master/lib/athena.efsm.ex#L256" class="view_source">Source</a>
+    <a href="https://github.com/ramsay-t/Athena/blob/master/lib/athena.efsm.ex#L265" class="view_source">Source</a>
+  
+</section>
+<section class="detail">
+  <div class="detail_header" id="merge/4">
+    <span class="signature"><strong>merge(s1, s2, efsm, ignore)</strong></span>
+    <div class="detail_header_links">
+      <span class="detail_type">(function)</span>
+      <a href="#merge/4" class="detail_link" title="Link to this function">#</a>
+      <a class="to_top_link" href="#content" title="To the top of the page">&uarr;</a>
+    </div>
+  </div>
+  
+  <section class="docstring">
+    
+  </section>
+  
+    <a href="https://github.com/ramsay-t/Athena/blob/master/lib/athena.efsm.ex#L269" class="view_source">Source</a>
   
 </section>
 <section class="detail">
@@ -244,6 +272,25 @@ This can lead to further merges as the algorithm ‘zips’ together chains of s
   
 </section>
 <section class="detail">
+  <div class="detail_header" id="walk/2">
+    <span class="signature"><strong>walk(trace, efsm)</strong></span>
+    <div class="detail_header_links">
+      <span class="detail_type">(function)</span>
+      <a href="#walk/2" class="detail_link" title="Link to this function">#</a>
+      <a class="to_top_link" href="#content" title="To the top of the page">&uarr;</a>
+    </div>
+  </div>
+  
+  <section class="docstring">
+    <p>Attempt to ‘walk’ the trace over the given EFSM.</p>
+<p>This is equivilent to walk(trace,{get_start(efsm),%{}},efsm).</p>
+
+  </section>
+  
+    <a href="https://github.com/ramsay-t/Athena/blob/master/lib/athena.efsm.ex#L162" class="view_source">Source</a>
+  
+</section>
+<section class="detail">
   <div class="detail_header" id="walk/3">
     <span class="signature"><strong>walk(trace, arg2, efsm)</strong></span>
     <div class="detail_header_links">
@@ -268,7 +315,7 @@ final bindings, the sequence of output bindings, and a ‘path’ through the ma
 
   </section>
   
-    <a href="https://github.com/ramsay-t/Athena/blob/master/lib/athena.efsm.ex#L169" class="view_source">Source</a>
+    <a href="https://github.com/ramsay-t/Athena/blob/master/lib/athena.efsm.ex#L178" class="view_source">Source</a>
   
 </section>
 
