@@ -263,7 +263,11 @@ defmodule Athena.EFSM do
   """
 	@spec merge(String.t,String.t,t) :: t
 	def merge(s1,s2,efsm) do
-		:io.format("Merging ~p and ~p~n",[s1,s2])
+		merge(s1,s2,efsm,[])
+	end
+
+	def merge(s1,s2,efsm,ignore) do
+		#:io.format("Merging ~p and ~p~n",[s1,s2])
 		newname = if s1 == s2 do s1 else to_string(s1) <> "," <> to_string(s2) end
 		# Replace old elements of the transition matrix with the new state
 		{newefsm,alltrans} = List.foldl(Map.keys(efsm),
@@ -284,17 +288,17 @@ defmodule Athena.EFSM do
 												end)
 		# Check for non-determinism
 		{detefsm,statemerges} = List.foldl(get_compat_trans(alltrans),
-												 {newefsm,[{s1,s2}]},
+												 {newefsm,[{s1,s2} | ignore]},
 												 fn({{d1,_l1},{d2,_l2}},{accefsm,accmerges}) ->
 														 case Enum.member?(accmerges,{d1,d2}) do
 															 false ->
-																 {nnefsm,submerges} = merge(d1,d2,accefsm)
+																 {nnefsm,submerges} = merge(d1,d2,accefsm,accmerges)
 																 {nnefsm,accmerges ++ submerges}
 															 true ->
 																{accefsm,accmerges} 
 														 end
 												 end)
-		{merge_trans(detefsm,statemerges),statemerges}
+		{merge_trans(detefsm,statemerges),Enum.filter(statemerges, fn(m) -> not Enum.any?(ignore, fn(i) -> i == m end) end)}
 	end
 
 	defp merge_trans(efsm,statemerges) do

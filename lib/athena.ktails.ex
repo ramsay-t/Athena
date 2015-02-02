@@ -103,7 +103,7 @@ defmodule Athena.KTails do
 										if Exp.freevars(e) == Exp.freevars(o) do
 											acc + 0.01
 										else
-											acc - 0.01
+											acc - 0.2
 										end
 									end
 							end) + compare_exps(es,other)

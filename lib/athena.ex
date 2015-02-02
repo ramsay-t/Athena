@@ -25,7 +25,7 @@ defmodule Athena do
 	end
 	defp learn_step(efsm, traceset, intras, [{score,{s1,s2}} | moremerges], merge_selector, threshold) do
 		#:io.format("EFSM:~n~p~n",[Athena.EFSM.to_dot(efsm)])
-		:io.format("Best Merge: ~p~n",[{score,{s1,s2}}])
+		#:io.format("Best Merge: ~p~n",[{score,{s1,s2}}])
 		if score < threshold do
 			efsm
 		else
@@ -35,13 +35,13 @@ defmodule Athena do
 				inters = Athena.Intertrace.get_inters(newefsm,traceset,intras)
 				finalefsm = inter_step(newefsm, traceset, intras, [], inters)
 				
-				:io.format("Final EFSM:~n~p~n",[Athena.EFSM.to_dot(finalefsm)])
+				#:io.format("Final EFSM:~n~p~n",[Athena.EFSM.to_dot(finalefsm)])
 				#:io.format("~n~p~n",[finalefsm])
 				
 				learn_step(finalefsm, traceset, intras, merge_selector.(finalefsm), merge_selector, threshold)
 			rescue
 				_e in Athena.LearnException ->
-					:io.format("That merge failed...~n",[])
+					#:io.format("That merge failed...~n",[])
 					# Made something invalid somewhere...
 					learn_step(efsm, traceset, intras, moremerges, merge_selector, threshold)
 			end
@@ -56,25 +56,29 @@ defmodule Athena do
 			inter_step(efsm, traceset, intras, ignore, more)
 		else
 			try do
-				#:io.format("Applying ~p~n",[inter])
+				#:io.format("Applying ~p...~n",[inter])
 				{midefsm,vname} = fix_first(efsm,traceset,inter)
 				fixedefsm = fix_second(midefsm,traceset,inter,vname)
+				{s1,s2,{tn1,_},{tn2,_}} = inter
+				# Now merge the states into themselves to clean up transitions
+				#:io.format("Updating ~p and ~p...~n",[s1,s2])
+				{m1efsm,_} = Athena.EFSM.merge(s1,s1,fixedefsm)
+				{m2efsm,_} = Athena.EFSM.merge(s2,s2,m1efsm)
 				# Check we didn't break anything...
-				{_,_,{tn1,_},{tn2,_}} = inter
 				#:io.format("Trying ~p~n",[get_trace(traceset,tn1)])
-				Athena.EFSM.walk(get_trace(traceset,tn1),efsm)
+				Athena.EFSM.walk(get_trace(traceset,tn1),m2efsm)
 				#:io.format("Trying ~p~n",[get_trace(traceset,tn2)])
-				Athena.EFSM.walk(get_trace(traceset,tn2),efsm)
+				Athena.EFSM.walk(get_trace(traceset,tn2),m2efsm)
 				#:io.format("Made:~n~p~n~n",[Athena.EFSM.to_dot(fixedefsm)])
-				case Athena.Intertrace.get_inters(fixedefsm,traceset,intras) do
+				case Athena.Intertrace.get_inters(m2efsm,traceset,intras) do
 					[] -> fixedefsm
 					inters -> 
 						# We can ignore this now, since it either worked or it wont
-						inter_step(fixedefsm, traceset, intras, [inter | ignore], inters)
+						inter_step(m2efsm, traceset, intras, [inter | ignore], inters)
 				end
 				rescue
 					_e in Athena.LearnException ->
-					:io.format("That Inter failed...~n~p~n",[_e])
+					#:io.format("That Inter failed...~n",[])
 					inter_step(efsm,traceset,intras,[inter | ignore],more)
 			end
 		end
@@ -206,16 +210,11 @@ defmodule Athena do
 	defp new_transitions(efsm,s,{from1,to1},{from2,to2},newtrans1,newtrans2) do 
 		# Add the new transition to both places, then merge the state with itself to force re-check of subsuming transitions
 		# The new transition should subsume both of the old ones
-		:io.format("Merging ~p into itself...~n",[s])
-		{newefsm,_} = Athena.EFSM.merge(s,s,
-																		Map.put(
-																						Map.put(efsm,{from1,to1},[newtrans1 | efsm[{from1,to1}]]),
-																								{from2,to2},[newtrans2 | efsm[{from2,to2}]]
-																					)
-																	 )
-		newefsm
+		Map.put(
+						Map.put(efsm,{from1,to1},[newtrans1 | efsm[{from1,to1}]]),
+								{from2,to2},[newtrans2 | efsm[{from2,to2}]]
+					)
 	end
-	
 
 	defp gen_update("","",ioname,rname) do
 		{:assign,rname,{:v,ioname}}
