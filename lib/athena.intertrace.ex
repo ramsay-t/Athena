@@ -87,11 +87,11 @@ defmodule Athena.Intertrace do
 																		acc
 																	end
 																res ->
-																	raise "Invalid trace in the EFSM?? " <> to_string(:io_lib.format("~p <<~p>>",[slice2,res]))
+																	raise Athena.LearnException, message: "Invalid trace in the EFSM?? " <> to_string(:io_lib.format("~p <<~p>>",[slice2,res]))
 															end
 													end)
 						 res ->
-							 raise "Invalid trace in the EFSM?? " <> to_string(:io_lib.format("~p <<~p>>",[slice1,res]))
+							 raise Athena.LearnException, message: "Invalid trace in the EFSM?? " <> to_string(:io_lib.format("~p <<~p>>",[slice1,res]))
 					 end
 		hits ++ check_snds(efsm,traceset,intras)
 	end

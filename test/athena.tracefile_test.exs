@@ -29,8 +29,10 @@ defmodule Athena.TracefileTest do
 		[t1(),t2(),t3()]
 	end
 
-	test "Load simple file" do
-		assert Tracefile.load_file("sample-traces/vend1.json") == traceset1
+	test "Load simple JSON file" do
+		assert Tracefile.load_json_file("sample-traces/vend1.json") == traceset1
 	end
+
+	
 
 end

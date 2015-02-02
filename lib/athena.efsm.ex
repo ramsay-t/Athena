@@ -31,7 +31,7 @@ defmodule Athena.EFSM do
 					{prefix,suffix} = Enum.split(t,length(prefix))
 					build_pta_step(ts,extend(length(prefix),suffix,tn,state,add_source(path,prefix,tn,efsm)))
 				{:nondeterministic,{start,bind},e,path} ->
-					raise RuntimeError, message: :io_lib.format("Non-deterministic choice at ~p~n~p~n~p~n",[{start,bind},e,path])
+					raise Athena.LearnException, message: :io_lib.format("Non-deterministic choice at ~p~n~p~n~p~n",[{start,bind},e,path])
 			end
 		end
 	end
@@ -157,6 +157,15 @@ defmodule Athena.EFSM do
 	@doc """
   Attempt to 'walk' the trace over the given EFSM.
 
+  This is equivilent to walk(trace,{get_start(efsm),%{}},efsm).
+  """
+	def walk(trace,efsm) do
+		walk(trace,{get_start(efsm),%{}},efsm)
+	end
+
+	@doc """
+  Attempt to 'walk' the trace over the given EFSM.
+
   This will start at the initial state and attempt to take transitions that match the events in the trace.
   If it succeeds (that is, if all the events can be matched to transitions) then it returns the final state,
   final bindings, the sequence of output bindings, and a 'path' through the machine.
@@ -254,6 +263,7 @@ defmodule Athena.EFSM do
   """
 	@spec merge(String.t,String.t,t) :: t
 	def merge(s1,s2,efsm) do
+		:io.format("Merging ~p and ~p~n",[s1,s2])
 		newname = if s1 == s2 do s1 else to_string(s1) <> "," <> to_string(s2) end
 		# Replace old elements of the transition matrix with the new state
 		{newefsm,alltrans} = List.foldl(Map.keys(efsm),
@@ -319,13 +329,11 @@ defmodule Athena.EFSM do
 		{[t],[]}
 	end
 	defp merge_one(t, [o | os]) do
-		#FIXME label subsumption/merging is hard
-		#      especially merging updates etc.
 		if Athena.Label.subsumes?(t,o) do
-			{[Map.put(t,:sources,t[:sources] ++ o[:sources])],os}
+			{[Map.put(t,:sources,:lists.usort(t[:sources] ++ o[:sources]))],os}
 		else 
 			if Athena.Label.subsumes?(o,t) do
-				{[Map.put(o,:sources,o[:sources] ++ t[:sources])],os}
+				{[Map.put(o,:sources,:lists.usort(o[:sources] ++ t[:sources]))],os}
 			else
 				{n,ns} = merge_one(t,os)
 				{[o|n],ns}
@@ -340,7 +348,7 @@ defmodule Athena.EFSM do
 		cs = List.foldl(ts,
 										[],
 										fn({d2,tt},acc) -> 
-												if Athena.Label.subsumes?(t,tt) do
+												if Athena.Label.subsumes?(t,tt) or Athena.Label.subsumes?(tt,t) do
 													[{{d1,t},{d2,tt}}|acc]
 												else
 													acc

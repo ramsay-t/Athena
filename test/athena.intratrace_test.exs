@@ -73,7 +73,7 @@ defmodule Athena.IntratraceTest do
 	end
 
 	test "Make intra set from file" do
-		traces = Tracefile.load_file("sample-traces/vend1.json")
+		traces = Tracefile.load_json_file("sample-traces/vend1.json")
 		traceset = Athena.make_trace_set(traces)
 		assert Intratrace.get_intra_set(traceset) ==  %{1 => [%{content: "ok", fst: {1, :output, 1}, snd: {4, :output, 1}}, 
 																												%{content: "coke", fst: {1, :input, 1}, snd: {4, :output, 1}},

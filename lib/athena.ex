@@ -25,7 +25,7 @@ defmodule Athena do
 	end
 	defp learn_step(efsm, traceset, intras, [{score,{s1,s2}} | moremerges], merge_selector, threshold) do
 		#:io.format("EFSM:~n~p~n",[Athena.EFSM.to_dot(efsm)])
-		#:io.format("Best: ~p~n",[{score,{s1,s2}}])
+		:io.format("Best Merge: ~p~n",[{score,{s1,s2}}])
 		if score < threshold do
 			efsm
 		else
@@ -33,32 +33,54 @@ defmodule Athena do
 				{newefsm,merges} = Athena.EFSM.merge(s1,s2,efsm)
 				
 				inters = Athena.Intertrace.get_inters(newefsm,traceset,intras)
-				#:io.format("Inters:~n~p~n",[inters])
-				finalefsm = inter_step(newefsm, traceset, intras, inters)
+				finalefsm = inter_step(newefsm, traceset, intras, [], inters)
 				
-				#:io.format("Final EFSM:~n~p~n",[Athena.EFSM.to_dot(finalefsm)])
+				:io.format("Final EFSM:~n~p~n",[Athena.EFSM.to_dot(finalefsm)])
 				#:io.format("~n~p~n",[finalefsm])
 				
 				learn_step(finalefsm, traceset, intras, merge_selector.(finalefsm), merge_selector, threshold)
 			rescue
-				_e ->
-					#:io.format("That merge failed...~n")
+				_e in Athena.LearnException ->
+					:io.format("That merge failed...~n",[])
 					# Made something invalid somewhere...
 					learn_step(efsm, traceset, intras, moremerges, merge_selector, threshold)
 			end
 		end
 	end
 
-	defp inter_step(efsm, _traceset, _intras, []) do
+	defp inter_step(efsm, _traceset, _intras, _ignore, []) do
 		efsm
 	end
-	defp inter_step(efsm, traceset, intras, [inter | inters]) do
-		{midefsm,vname} = fix_first(efsm,traceset,inter)
-		fixedefsm = fix_second(midefsm,traceset,inter,vname)
+	defp inter_step(efsm, traceset, intras, ignore, [inter | more]) do
+		if Enum.any?(ignore,fn(i) -> i == inter end) do
+			inter_step(efsm, traceset, intras, ignore, more)
+		else
+			try do
+				#:io.format("Applying ~p~n",[inter])
+				{midefsm,vname} = fix_first(efsm,traceset,inter)
+				fixedefsm = fix_second(midefsm,traceset,inter,vname)
+				# Check we didn't break anything...
+				{_,_,{tn1,_},{tn2,_}} = inter
+				#:io.format("Trying ~p~n",[get_trace(traceset,tn1)])
+				Athena.EFSM.walk(get_trace(traceset,tn1),efsm)
+				#:io.format("Trying ~p~n",[get_trace(traceset,tn2)])
+				Athena.EFSM.walk(get_trace(traceset,tn2),efsm)
+				#:io.format("Made:~n~p~n~n",[Athena.EFSM.to_dot(fixedefsm)])
+				case Athena.Intertrace.get_inters(fixedefsm,traceset,intras) do
+					[] -> fixedefsm
+					inters -> 
+						# We can ignore this now, since it either worked or it wont
+						inter_step(fixedefsm, traceset, intras, [inter | ignore], inters)
+				end
+				rescue
+					_e in Athena.LearnException ->
+					:io.format("That Inter failed...~n~p~n",[_e])
+					inter_step(efsm,traceset,intras,[inter | ignore],more)
+			end
+		end
 	end
 
 	defp fix_first(efsm,traceset,{s1,_,{tn1,i1},{tn2,i2}}) do
-
 		{e1n,io,idx} = i1[:fst]
 		{e2n,io,idx} = i2[:fst]
 
@@ -94,34 +116,38 @@ defmodule Athena do
 									{newupdates1,newupdates2}
 							end
 
-						newtrans1 = %{
-													label: tran1[:label],
-													guards: newguards1,
-													outputs: tran1[:outputs],
-													updates: newupdates1,
-													sources: tran1[:sources]
-													}
-						newtrans2 = %{
-													label: tran2[:label],
-													guards: newguards2,
-													outputs: tran2[:outputs],
-													updates: newupdates2,
-													sources: tran2[:sources]
-													}
-						
-						
-						# Add the new transition to both places, then merge the state with itself to force re-check of subsuming transitions
-						# The new transition should subsume both of the old ones
-						{newefsm,_} = Athena.EFSM.merge(s1,s1,
-																						Map.put(
-																										Map.put(efsm,{from1,to1},[newtrans1 | efsm[{from1,to1}]]),
-																												{from2,to2},[newtrans2 | efsm[{from2,to2}]]
-																									)
-																					 )
-						{newefsm,rname}
+						newtrans1 = Map.put(Map.put(tran1,:guards,newguards1),:updates,newupdates1)
+						newtrans2 = Map.put(Map.put(tran2,:guards,newguards2),:updates,newupdates2)
+
+						{new_transitions(efsm,s1,{from1,to1},{from2,to2},newtrans1,newtrans2),
+						 rname}
 					:output ->
-						#fixme
-						raise to_string(:io_lib.format("Unimplemented: fix first ~p:~p~n~p~n~p~n",[io,idx,tran1,tran2]))
+						{rname,nu} = 
+							make_update_if_needed(efsm,pre,suf,ioname,tran1[:updates]++tran2[:updates])
+						{newupdates1,newupdates2} = 
+							case nu do
+								nil ->
+									{tran1[:updates],tran2[:updates]}
+								up ->
+									newupdates1 = Epagoge.ILP.simplify([up | tran1[:updates]])
+									newupdates2 = Epagoge.ILP.simplify([up | tran2[:updates]])
+									{newupdates1,newupdates2}
+							end
+						case make_assign_if_needed(ioname,pre,suf,rname,tran1[:outputs]++tran2[:outputs]) do
+							nil ->
+								# No change needed - the change is already subsumed by something
+								newops1 = tran1[:outputs]
+								newops2 = tran2[:outputs]
+							no ->
+								newops1 = Epagoge.ILP.simplify([no | tran1[:outputs]])
+								newops2 = Epagoge.ILP.simplify([no | tran2[:outputs]])
+						end
+
+						newtrans1 = Map.put(Map.put(tran1,:updates,newupdates1),:outputs,newops1)
+						newtrans2 = Map.put(Map.put(tran2,:updates,newupdates1),:outputs,newops2)
+
+						{new_transitions(efsm,s1,{from1,to1},{from2,to2},newtrans1,newtrans2),
+						 rname}
 				end
 		end
 	end
@@ -146,13 +172,24 @@ defmodule Athena do
 			{pre,suf} ->
 				case io do
 					:input ->
-						#FIXME...
-						raise to_string(:io_lib.format("Unimplemented: fix second ~p:~p~n~p~n~p~n",[io,idx,tran1,tran2]))
+						case Epagoge.Str.get_match([{str1,i1[:content]},{str2,i2[:content]}]) do
+							nil ->
+								# No computable update...
+								raise Athena.LearnException, message: to_string(:io_lib.format("No computable generalisation for ~p => ~p vs ~p => ~p~n",[str1,i1[:content],str2,i2[:content]]))
+							{pre,suf} ->
+								ng = {:match,pre,suf,{:v,ioname}}
+								# If the match is over {"",""} then the simplifier will take care of it...
+								newguards1 = Epagoge.ILP.simplify([ng | tran1[:guards]])
+								newguards2 = Epagoge.ILP.simplify([ng | tran2[:guards]])
+								
+								newtrans1 = Map.put(tran1,:guards,newguards1)
+								newtrans2 = Map.put(tran2,:guards,newguards2)
+								new_transitions(efsm,s2,{from1,to1},{from2,to2},newtrans1,newtrans2)
+						end
 					:output ->
-						#:io.format("fix second <<~p>>~n~p <<-- ~p~n~p <<-- ~p~n~p~n",[rname,str1,i1[:content],str2,i2[:content],{pre,suf}])
 						case make_assign_if_needed(ioname,pre,suf,rname,tran1[:outputs]++tran2[:outputs]) do
 							nil ->
-								# No change needed
+								# No change needed - the change is already subsumed by something
 								efsm
 							no ->
 								newops1 = Epagoge.ILP.simplify([no | tran1[:outputs]])
@@ -160,18 +197,25 @@ defmodule Athena do
 								
 								newtrans1 = Map.put(tran1,:outputs,newops1)
 								newtrans2 = Map.put(tran2,:outputs,newops2)
-
-								{newefsm,_} = Athena.EFSM.merge(s2,s2,
-																								Map.put(
-																												Map.put(efsm,{from1,to1},[newtrans1 | efsm[{from1,to1}]]),
-																														{from2,to2},[newtrans2 | efsm[{from2,to2}]]
-																											)
-																							 )
-								newefsm
+								new_transitions(efsm,s2,{from1,to1},{from2,to2},newtrans1,newtrans2)
 						end
 				end
 		end
 	end
+
+	defp new_transitions(efsm,s,{from1,to1},{from2,to2},newtrans1,newtrans2) do 
+		# Add the new transition to both places, then merge the state with itself to force re-check of subsuming transitions
+		# The new transition should subsume both of the old ones
+		:io.format("Merging ~p into itself...~n",[s])
+		{newefsm,_} = Athena.EFSM.merge(s,s,
+																		Map.put(
+																						Map.put(efsm,{from1,to1},[newtrans1 | efsm[{from1,to1}]]),
+																								{from2,to2},[newtrans2 | efsm[{from2,to2}]]
+																					)
+																	 )
+		newefsm
+	end
+	
 
 	defp gen_update("","",ioname,rname) do
 		{:assign,rname,{:v,ioname}}
@@ -230,7 +274,7 @@ defmodule Athena do
 	end
 
 	defp get_rnames({:assign,name,_}) do
-		name
+		[name]
 	end
 	defp get_rnames(exp) do
 		raise "Non-assignment in updates: " <> Epagoge.Exp.to_string(exp)
@@ -248,9 +292,9 @@ defmodule Athena do
 			[] ->
 				:r1
 			vnames ->
-				last = hd(Enum.reverse(:lists.usort(vnames)))
+				last = to_string(hd(Enum.reverse(:lists.usort(vnames))))
 				# This assumes that variables/registers are always names :rn for some n
-				{n,_} = Integer.parse(String.split(to_string(last),1))
+				{n,_} = Integer.parse(String.slice(last,1,String.length(last)))
 				String.to_atom("r" <> to_string(n+1))
 		end
 	end
