@@ -41,7 +41,8 @@ defmodule Athena.Label do
 			false
 		else
 			outputs = Enum.map(l[:outputs], fn(o) -> get_new_binding(o,space) end)
-			updates = Enum.map(l[:updates], fn(o) -> get_new_binding(o,space) end)
+			newspace = List.foldl(outputs, space, fn({name,val},acc) -> Map.put(acc,name,val) end)
+			updates = Enum.map(l[:updates], fn(o) -> get_new_binding(o,newspace) end)
 			{List.foldl(outputs,%{},fn({n,v},b) -> Map.put(b,n,v) end),
 						List.foldl(updates,bind,fn({n,v},b) -> Map.put(b,n,v) end)}
 		end

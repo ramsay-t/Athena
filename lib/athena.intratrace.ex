@@ -5,6 +5,9 @@ defmodule Athena.Intratrace do
 	@type t :: %{:fst => {integer,io,integer}, :snd => {integer,io,integer}, :content => String.t}
 
 	@spec get_intras(Athena.trace) :: list(t)
+	def get_intras([]) do
+		[]
+	end
 	def get_intras(trace) do
 		enumerated = List.zip([:lists.seq(1,length(trace)),trace])
 		get_intras_from_enumerated(hd(enumerated),tl(enumerated),[])

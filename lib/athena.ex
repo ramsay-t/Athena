@@ -14,9 +14,13 @@ defmodule Athena do
 	@spec learn(list(trace),(Athena.EFSM.t -> {float,{String.t,String.t}}), float) :: Athena.EFSM.t
 	def learn(traces, merge_selector \\ &Athena.KTails.selector(2,&1), threshold \\ 2.0) do
 		traceset = make_trace_set(traces)
+		:io.format("Building PTA...~n")
 		efsm = Athena.EFSM.build_pta(traceset)
+		:io.format("PTA:~n~p~n",[Athena.EFSM.to_dot(efsm)])
+		:io.format("Detecting Intra-trace dependencies...~n")
 		intras = Athena.Intratrace.get_intra_set(traceset)
 
+		:io.format("Learning... [~p states]~n",[length(Athena.EFSM.get_states(efsm))])
 		learn_step(efsm, traceset, intras, merge_selector.(efsm), merge_selector, threshold)
 	end
 
@@ -25,7 +29,7 @@ defmodule Athena do
 	end
 	defp learn_step(efsm, traceset, intras, [{score,{s1,s2}} | moremerges], merge_selector, threshold) do
 		#:io.format("EFSM:~n~p~n",[Athena.EFSM.to_dot(efsm)])
-		#:io.format("Best Merge: ~p~n",[{score,{s1,s2}}])
+		:io.format("Best Merge: ~p~n",[{score,{s1,s2}}])
 		if score < threshold do
 			efsm
 		else
@@ -35,20 +39,21 @@ defmodule Athena do
 				inters = Athena.Intertrace.get_inters(newefsm,traceset,intras)
 				finalefsm = inter_step(newefsm, traceset, intras, [], inters)
 				
-				#:io.format("Final EFSM:~n~p~n",[Athena.EFSM.to_dot(finalefsm)])
+				:io.format("Final EFSM:~n~p~n",[Athena.EFSM.to_dot(finalefsm)])
 				#:io.format("~n~p~n",[finalefsm])
 				
+				:io.format("Computing next merge... [~p states]~n",[length(Athena.EFSM.get_states(finalefsm))])
 				learn_step(finalefsm, traceset, intras, merge_selector.(finalefsm), merge_selector, threshold)
 			rescue
 				_e in Athena.LearnException ->
-					#:io.format("That merge failed...~n",[])
+					:io.format("That merge failed...~n",[])
 					# Made something invalid somewhere...
 					learn_step(efsm, traceset, intras, moremerges, merge_selector, threshold)
 			end
 		end
 	end
 
-	defp inter_step(efsm, _traceset, _intras, _ignore, []) do
+	defp inter_step(efsm, _traceset, _intras, ignore, []) do
 		efsm
 	end
 	defp inter_step(efsm, traceset, intras, ignore, [inter | more]) do
@@ -56,7 +61,7 @@ defmodule Athena do
 			inter_step(efsm, traceset, intras, ignore, more)
 		else
 			try do
-				#:io.format("Applying ~p...~n",[inter])
+				:io.format("Applying ~p...~n",[inter])
 				{midefsm,vname} = fix_first(efsm,traceset,inter)
 				fixedefsm = fix_second(midefsm,traceset,inter,vname)
 				{s1,s2,{tn1,_},{tn2,_}} = inter
@@ -73,12 +78,14 @@ defmodule Athena do
 				case Athena.Intertrace.get_inters(m2efsm,traceset,intras) do
 					[] -> fixedefsm
 					inters -> 
+						filtered = Enum.filter(inters, fn(ir) -> not  Enum.any?([inter | ignore],fn(i) -> i == ir end)  end)
+						:io.format("Worked! [~p more, ~p ignored]~n",[length(filtered),length(ignore)+1])
 						# We can ignore this now, since it either worked or it wont
-						inter_step(m2efsm, traceset, intras, [inter | ignore], inters)
+						inter_step(m2efsm, traceset, intras, [inter | ignore], filtered)
 				end
 				rescue
 					_e in Athena.LearnException ->
-					#:io.format("That Inter failed...~n",[])
+					:io.format("That Inter failed...[~p more, ~p ignored]~n",[length(more), length(ignore)+1])
 					inter_step(efsm,traceset,intras,[inter | ignore],more)
 			end
 		end
@@ -98,8 +105,7 @@ defmodule Athena do
 		case Epagoge.Str.get_match([{str1,i1[:content]},{str2,i2[:content]}]) do
 			nil ->
 				# No computable update...
-				:io.format("No computable update for ~p => ~p vs ~p => ~p~n",[str1,i1[:content],str2,i2[:content]])
-				efsm
+				raise Athena.LearnException, message: to_string(:io_lib.format("No computable update for ~p => ~p vs ~p => ~p~n",[str1,i1[:content],str2,i2[:content]]))
 			{pre,suf} ->
 				case io do
 					:input ->
@@ -171,8 +177,7 @@ defmodule Athena do
 		case Epagoge.Str.get_match([{str1,i1[:content]},{str2,i2[:content]}]) do
 			nil ->
 				# No computable update...
-				:io.format("No computable update for ~p => ~p vs ~p => ~p~n",[str1,i1[:content],str2,i2[:content]])
-				efsm
+				raise Athena.LearnException, message: to_string(:io_lib.format("No computable update for ~p => ~p vs ~p => ~p~n",[str1,i1[:content],str2,i2[:content]]))
 			{pre,suf} ->
 				case io do
 					:input ->

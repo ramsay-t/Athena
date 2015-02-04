@@ -17,6 +17,7 @@ defmodule Athena.EFSM do
 		efsm
 	end
 	defp build_pta_step([{tn,t} | ts], efsm) do
+		#:io.format("   ~p more traces...~n",[length(ts)])
 		if efsm == %{} do
 			build_pta_step(ts,extend(0,t,tn,"0",efsm))
 		else
@@ -118,7 +119,7 @@ defmodule Athena.EFSM do
 									fn(e) ->
 											String.replace(
 																		 String.replace(
-																										Exp.pp(varnames_to_dot(e)),
+																										String.replace(Exp.pp(varnames_to_dot(e)),"<>","&lt;&gt;"),
 																												">","&gt;"),
 																						"SUB&gt;",
 																						"SUB>")
