@@ -16,18 +16,18 @@ defmodule Athena do
 		traceset = make_trace_set(traces)
 		:io.format("Building PTA...~n")
 		efsm = Athena.EFSM.build_pta(traceset)
-		:io.format("PTA:~n~p~n",[Athena.EFSM.to_dot(efsm)])
+		#:io.format("PTA:~n~p~n",[Athena.EFSM.to_dot(efsm)])
 		:io.format("Detecting Intra-trace dependencies...~n")
 		intras = Athena.Intratrace.get_intra_set(traceset)
 
 		:io.format("Learning... [~p states]~n",[length(Athena.EFSM.get_states(efsm))])
-		learn_step(efsm, traceset, intras, merge_selector.(efsm), merge_selector, threshold)
+		learn_step(efsm, traceset, intras, merge_selector.(efsm), merge_selector, threshold, [])
 	end
 
-	defp learn_step(efsm, _traceset, _intras, [], _merge_selector, _threshold) do
+	defp learn_step(efsm, _traceset, _intras, [], _merge_selector, _threshold, _doneinters) do
 		efsm
 	end
-	defp learn_step(efsm, traceset, intras, [{score,{s1,s2}} | moremerges], merge_selector, threshold) do
+	defp learn_step(efsm, traceset, intras, [{score,{s1,s2}} | moremerges], merge_selector, threshold, doneinters) do
 		#:io.format("EFSM:~n~p~n",[Athena.EFSM.to_dot(efsm)])
 		:io.format("Best Merge: ~p~n",[{score,{s1,s2}}])
 		if score < threshold do
@@ -36,57 +36,59 @@ defmodule Athena do
 			try do
 				{newefsm,merges} = Athena.EFSM.merge(s1,s2,efsm)
 				
+				#:io.format("Mid EFSM:~n~p~n",[Athena.EFSM.to_dot(newefsm)])
+				interesting = Enum.map(merges,fn({a,b}) -> if a == b do a else a <> "," <> b end end)
 				inters = Athena.Intertrace.get_inters(newefsm,traceset,intras)
-				finalefsm = inter_step(newefsm, traceset, intras, [], inters)
-				
-				:io.format("Final EFSM:~n~p~n",[Athena.EFSM.to_dot(finalefsm)])
+				filtered = Enum.filter(inters, fn(done) -> not Enum.any?(doneinters,fn(d) -> d == done end) end)
+				{finalefsm,newnewdoneinters} = inter_step(newefsm, traceset, intras, [], filtered, [], interesting)
+				newdoneinters = :lists.usort(newnewdoneinters ++ doneinters)
+				File.write("current_efsm.dot",Athena.EFSM.to_dot(finalefsm),[:write])
+						
+				#:io.format("Final EFSM:~n~p~n",[Athena.EFSM.to_dot(finalefsm)])
 				#:io.format("~n~p~n",[finalefsm])
 				
 				:io.format("Computing next merge... [~p states]~n",[length(Athena.EFSM.get_states(finalefsm))])
-				learn_step(finalefsm, traceset, intras, merge_selector.(finalefsm), merge_selector, threshold)
+				learn_step(finalefsm, traceset, intras, merge_selector.(finalefsm), merge_selector, threshold, newdoneinters)
 			rescue
 				_e in Athena.LearnException ->
 					:io.format("That merge failed...~n",[])
 					# Made something invalid somewhere...
-					learn_step(efsm, traceset, intras, moremerges, merge_selector, threshold)
+					learn_step(efsm, traceset, intras, moremerges, merge_selector, threshold, doneinters)
 			end
 		end
 	end
 
-	defp inter_step(efsm, _traceset, _intras, ignore, []) do
-		efsm
+	defp inter_step(efsm, _traceset, _intras, ignore, [], done, _interesing) do
+		{efsm,done}
 	end
-	defp inter_step(efsm, traceset, intras, ignore, [inter | more]) do
+	defp inter_step(efsm, traceset, intras, ignore, [inter | more], done, interesting) do
+		# FIXME interesting is not used...
 		if Enum.any?(ignore,fn(i) -> i == inter end) do
-			inter_step(efsm, traceset, intras, ignore, more)
+			inter_step(efsm, traceset, intras, ignore, more, done, interesting)
 		else
 			try do
-				:io.format("Applying ~p...~n",[inter])
+				#:io.format("Applying ~p...~n",[inter])
 				{midefsm,vname} = fix_first(efsm,traceset,inter)
 				fixedefsm = fix_second(midefsm,traceset,inter,vname)
-				{s1,s2,{tn1,_},{tn2,_}} = inter
+				{s1,s2,{tn1,i1},{tn2,i2}} = inter
 				# Now merge the states into themselves to clean up transitions
 				#:io.format("Updating ~p and ~p...~n",[s1,s2])
 				{m1efsm,_} = Athena.EFSM.merge(s1,s1,fixedefsm)
 				{m2efsm,_} = Athena.EFSM.merge(s2,s2,m1efsm)
 				# Check we didn't break anything...
-				#:io.format("Trying ~p~n",[get_trace(traceset,tn1)])
-				Athena.EFSM.walk(get_trace(traceset,tn1),m2efsm)
-				#:io.format("Trying ~p~n",[get_trace(traceset,tn2)])
-				Athena.EFSM.walk(get_trace(traceset,tn2),m2efsm)
+				Enum.map(traceset, fn({_,t}) -> Athena.EFSM.walk(t,m2efsm) end)
 				#:io.format("Made:~n~p~n~n",[Athena.EFSM.to_dot(fixedefsm)])
 				case Athena.Intertrace.get_inters(m2efsm,traceset,intras) do
-					[] -> fixedefsm
+					[] -> {fixedefsm,done}
 					inters -> 
-						filtered = Enum.filter(inters, fn(ir) -> not  Enum.any?([inter | ignore],fn(i) -> i == ir end)  end)
-						:io.format("Worked! [~p more, ~p ignored]~n",[length(filtered),length(ignore)+1])
-						# We can ignore this now, since it either worked or it wont
-						inter_step(m2efsm, traceset, intras, [inter | ignore], filtered)
+						filtered = Enum.filter(inters, fn(ir) -> not  Enum.any?([inter | ignore++done],fn(i) -> i == ir end)  end)
+						:io.format("~p~nWorked! [~p more, ~p ignored, ~p applied]~n",[inter,length(filtered),length(ignore)+1,length(done)+1])
+						inter_step(m2efsm, traceset, intras, ignore, filtered,[inter | done],interesting)
 				end
 				rescue
 					_e in Athena.LearnException ->
-					:io.format("That Inter failed...[~p more, ~p ignored]~n",[length(more), length(ignore)+1])
-					inter_step(efsm,traceset,intras,[inter | ignore],more)
+					:io.format("Inter failed... [~p more, ~p ignored, ~p applied]~n",[length(more), length(ignore)+1, length(done)])
+					inter_step(efsm,traceset,intras,ignore,more,done,interesting)
 			end
 		end
 	end

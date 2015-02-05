@@ -12,7 +12,7 @@ defmodule Athena.KTails do
 							 
 	end
 
-	defp get_k_tails_from(state,k,efsm) do
+	def get_k_tails_from(state,k,efsm) do
 		if k < 1 do
 			[]
 		else
@@ -26,9 +26,9 @@ defmodule Athena.KTails do
 																						 fn(l,a2) ->  
 																								 case get_k_tails_from(to,k-1,efsm) do
 																									 [] ->
-																										 a2 ++ [[l]]
+																										 a2 ++ [{[to],[l]}]
 																									 t2 ->
-																										 a2 ++ Enum.map(t2, fn(t) -> [l | t] end)
+																										 a2 ++ Enum.map(t2, fn({ts,t}) -> {[to |ts], [l | t]} end)
 																								 end
 																						 end)
 												 else
@@ -46,6 +46,7 @@ defmodule Athena.KTails do
 		List.foldl(List.zip([:lists.seq(0,length(states)),states]), 
 									 %{},
 									 fn({idx,n},acc) ->
+											 :io.format("[~p]...",[idx])
 											 # We only need the triangle matrix
 											 {_,later} = Enum.split(states,idx+1)
 											 List.foldl(later,acc,fn(m,a2) -> Map.put(a2,{n,m},compare(n,m,tails)) end)
@@ -53,12 +54,12 @@ defmodule Athena.KTails do
 							)
 	end
 
-	defp compare(n,m,tails) do
-		#:io.format("~p vs ~p~n",[n,m])
+	def compare(n,m,tails) do
+		#:io.format("~p vs ~p~n~p~n~p~n",[n,m,tails[n],tails[m]])
 		List.foldl(tails[n],
 							 0,
-							 fn(t,acc) ->
-									 acc + List.foldl(tails[m],0,fn(ot,a2) -> a2 + compare_one(t,ot) end)
+							 fn({_,t},acc) ->
+									 acc + List.foldl(tails[m],0,fn({_,ot},a2) -> a2 + compare_one(t,ot) end)
 							 end)
 	end
 							 
@@ -76,7 +77,7 @@ defmodule Athena.KTails do
 			l1 == l2 ->
 				2 + compare_one(t1,t2)
 			Athena.Label.subsumes?(l1,l2) or Athena.Label.subsumes?(l2,l1) ->
-				1.5 + compare_one(t1,t2)
+				1.95 + compare_one(t1,t2)
 			l1[:label] == l2[:label] ->
 				1 +
 					compare_exps(l1[:guards],l2[:guards]) +

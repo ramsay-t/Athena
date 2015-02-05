@@ -19,7 +19,7 @@ defmodule Athena.Intertrace do
 
 	@spec get_inters(Athena.EFSM.t,Athena.traceset,%{integer => Athena.Intratrace.t}) :: list(t)
 	def get_inters(efsm,traceset,intras) do
-		# Get sets of intras for which the start states match
+		# Get sets of intras for which the start states match something interesting
 		firsts = Enum.map(Map.keys(efsm),
 								 fn({from,to}) ->
 										 {from,find_firsts(efsm[{from,to}],intras)}

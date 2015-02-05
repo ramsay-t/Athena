@@ -3,24 +3,24 @@ defmodule Athena.TracefileTest do
 	alias Athena.Tracefile, as: Tracefile
 
 	defp t1() do
-		[%{:label => "select", :inputs => ["coke"], :outputs => ["ok"]},
-		 %{:label => "coin", :inputs => ["50"], :outputs => ["ok"]},
-		 %{:label => "coin", :inputs => ["50"], :outputs => ["ok"]},
+		[%{:label => "select", :inputs => ["coke"], :outputs => []},
+		 %{:label => "coin", :inputs => ["50"], :outputs => ["50"]},
+		 %{:label => "coin", :inputs => ["50"], :outputs => ["100"]},
 		 %{:label => "vend", :inputs => [], :outputs => ["coke"]},
 		]
 	end
 
 	defp t2() do
-		[%{:label => "select", :inputs => ["coke"], :outputs => ["ok"]},
-		 %{:label => "coin", :inputs => ["100"], :outputs => ["ok"]},
+		[%{:label => "select", :inputs => ["coke"], :outputs => []},
+		 %{:label => "coin", :inputs => ["100"], :outputs => ["100"]},
 		 %{:label => "vend", :inputs => [], :outputs => ["coke"]},
 		]
 	end
 
 	defp t3() do
-		[%{:label => "select", :inputs => ["pepsi"], :outputs => ["ok"]},
-		 %{:label => "coin", :inputs => ["50"], :outputs => ["ok"]},
-		 %{:label => "coin", :inputs => ["50"], :outputs => ["ok"]},
+		[%{:label => "select", :inputs => ["pepsi"], :outputs => []},
+		 %{:label => "coin", :inputs => ["50"], :outputs => ["50"]},
+		 %{:label => "coin", :inputs => ["50"], :outputs => ["100"]},
 		 %{:label => "vend", :inputs => [], :outputs => ["pepsi"]},
 		]
 	end

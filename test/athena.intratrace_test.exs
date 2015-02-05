@@ -75,30 +75,14 @@ defmodule Athena.IntratraceTest do
 	test "Make intra set from file" do
 		traces = Tracefile.load_json_file("sample-traces/vend1.json")
 		traceset = Athena.make_trace_set(traces)
-		assert Intratrace.get_intra_set(traceset) ==  %{1 => [%{content: "ok", fst: {1, :output, 1}, snd: {4, :output, 1}}, 
-																												%{content: "coke", fst: {1, :input, 1}, snd: {4, :output, 1}},
-																												%{content: "ok", fst: {1, :output, 1}, snd: {3, :output, 1}}, 
-																												%{content: "ok", fst: {1, :input, 1}, snd: {3, :output, 1}},
-																												%{content: "ok", fst: {1, :output, 1}, snd: {2, :output, 1}}, 
-																												%{content: "ok", fst: {1, :input, 1}, snd: {2, :output, 1}},
-																												%{content: "ok", fst: {2, :output, 1}, snd: {4, :output, 1}}, 
-																												%{content: "ok", fst: {2, :output, 1}, snd: {3, :output, 1}},
-																												%{content: "50", fst: {2, :input, 1}, snd: {3, :input, 1}}, 
-																												%{content: "ok", fst: {3, :output, 1}, snd: {4, :output, 1}}
-																											 ],
-																									2 => [%{content: "ok", fst: {1, :output, 1}, snd: {3, :output, 1}}, 
-																												%{content: "coke", fst: {1, :input, 1}, snd: {3, :output, 1}},
-																												%{content: "ok", fst: {1, :output, 1}, snd: {2, :output, 1}}, 
-																												%{content: "ok", fst: {1, :input, 1}, snd: {2, :output, 1}},
-																												%{content: "ok", fst: {2, :output, 1}, snd: {3, :output, 1}}
-																											 ],
-																									3 => [%{content: "pepsi", fst: {1, :input, 1}, snd: {4, :output, 1}}, 
-																												%{content: "ok", fst: {1, :output, 1}, snd: {3, :output, 1}},
-																												%{content: "ok", fst: {1, :output, 1}, snd: {2, :output, 1}}, 
-																												%{content: "ok", fst: {2, :output, 1}, snd: {3, :output, 1}},
-																												%{content: "50", fst: {2, :input, 1}, snd: {3, :input, 1}}
-																								 ]
-																								 }
+		assert Intratrace.get_intra_set(traceset) == 
+												%{1 => [%{content: "coke", fst: {1, :input, 1}, snd: {4, :output, 1}},
+																%{content: "50", fst: {2, :output, 1}, snd: {3, :input, 1}},
+																%{content: "50", fst: {2, :input, 1}, snd: {3, :input, 1}}],
+													2 => [%{content: "coke", fst: {1, :input, 1}, snd: {3, :output, 1}}],
+													3 => [%{content: "pepsi", fst: {1, :input, 1}, snd: {4, :output, 1}},
+																%{content: "50", fst: {2, :output, 1}, snd: {3, :input, 1}},
+																%{content: "50", fst: {2, :input, 1}, snd: {3, :input, 1}}]}
 	end
 
 end

@@ -10,27 +10,44 @@ defmodule Athena.EFSM do
   """
 	@spec build_pta(Athena.traceset) :: t
 	def build_pta(traceset) do
-		build_pta_step(traceset, %{})
+		elem(add_traces(traceset, %{}),0)
 	end
 
-	defp build_pta_step([],efsm) do
-		efsm
+	@doc """
+  Add a list of traces to the EFSM.
+
+  This attempts to walk the EFSM with the traces. At the point at which the trace cannot bit fit to the existing EFSM
+  this will add a transition to a new state and then extend from there with the remainder of the trace.
+
+  It requires a list of pairs of trace number and trace. The trace number is used to fill in the sources field of the
+  transitions.
+  """
+	def add_traces(traceset,efsm) do
+		case get_start(efsm) do
+			nil -> add_traces_step(traceset,efsm,"0",[])
+			start -> add_traces_step(traceset,efsm,start,[])
+		end
 	end
-	defp build_pta_step([{tn,t} | ts], efsm) do
-		#:io.format("   ~p more traces...~n",[length(ts)])
+
+	def add_traces_step([],efsm,_start,hits) do
+		{efsm,hits}
+	end
+	def add_traces_step([{tn,t} | ts], efsm, start, hits) do
 		if efsm == %{} do
-			build_pta_step(ts,extend(0,t,tn,"0",efsm))
+			{newefsm,hits} = extend(0,t,tn,start,efsm)
+			add_traces_step(ts,newefsm,start,hits)
 		else
-			case walk(t,{"0",%{}},efsm) do
+			case walk(t,{start,%{}},efsm) do
 				{:ok,_state,_outputs,path} -> 
-					#:io.format("Completely included trace:~nFinal state: ~p~nOutputs: ~p~nPath: ~p~n",[_state,_outputs,path])
-					build_pta_step(ts,add_source(path,t,tn,efsm))
+					add_traces_step(ts,add_source(path,t,tn,efsm),start,hits)
 				{:failed_after,prefix,{state,_},path} ->
 					{prefix,suffix} = Enum.split(t,length(prefix))					
-					build_pta_step(ts,extend(length(prefix),suffix,tn,state,add_source(path,prefix,tn,efsm)))
+					{newefsm,newhits} = extend(length(prefix),suffix,tn,state,add_source(path,prefix,tn,efsm))
+					add_traces_step(ts,newefsm,start,hits++[state|newhits])
 				{:output_missmatch,prefix,{state,_},_,path} ->
 					{prefix,suffix} = Enum.split(t,length(prefix))
-					build_pta_step(ts,extend(length(prefix),suffix,tn,state,add_source(path,prefix,tn,efsm)))
+					{newefsm,newhits} =extend(length(prefix),suffix,tn,state,add_source(path,prefix,tn,efsm)) 
+					add_traces_step(ts,newefsm,start,hits++[state|newhits])
 				{:nondeterministic,{start,bind},e,path} ->
 					raise Athena.LearnException, message: :io_lib.format("Non-deterministic choice at ~p~n~p~n~p~n",[{start,bind},e,path])
 			end
@@ -227,12 +244,12 @@ defmodule Athena.EFSM do
 	end
 
 	defp extend(offset,trace,tn,start,efsm) do
-		extend_step(List.zip([:lists.seq(offset+1,length(trace)+offset),trace]),tn,start,efsm)
+		extend_step(List.zip([:lists.seq(offset+1,length(trace)+offset),trace]),tn,start,efsm,[])
 	end
-	defp extend_step([],_,_,efsm) do
-		efsm
+	defp extend_step([],_,_,efsm,hits) do
+		{efsm,hits}
 	end
-	defp extend_step([{n,e} | ts],tracenum,state,efsm) do
+	defp extend_step([{n,e} | ts],tracenum,state,efsm,hits) do
 		# This assumes that states are simply numbered. It will break horribly if they are given more complex names.
 		newstate = case get_states(efsm) do 
 						 [] -> to_string(elem(Integer.parse(state),0) + 1)
@@ -241,7 +258,7 @@ defmodule Athena.EFSM do
 							 laststate = hd(Enum.reverse(:lists.usort(Enum.map(states,fn(s) -> elem(Integer.parse(s),0) end))))
 							 to_string(laststate + 1)
 					 end
-		extend_step(ts,tracenum,newstate,Map.put(efsm,{state,newstate},[Map.put(Label.event_to_label(e),:sources,[%{trace: tracenum, event: n}])]))
+		extend_step(ts,tracenum,newstate,Map.put(efsm,{state,newstate},[Map.put(Label.event_to_label(e),:sources,[%{trace: tracenum, event: n}])]),hits ++ [newstate])
 	end
 
 	defp bind_entries(ips,prefix) do
