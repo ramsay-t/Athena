@@ -41,6 +41,11 @@ defmodule Athena.EFSMServer do
 			{:reply,:failed,state}
 		end
 	end
+	def handle_call({:add_trans,from,to,tran},_from,state) do
+		newefsm = Map.put(state[:efsm],{from,to},[tran | state[:efsm][{from,to}]])
+		# Merge tate into itself to clean up
+		handle_call({:merge,from,from},_from,Map.put(state,:efsm,newefsm))
+	end
 	def handle_call({:merge,s1,s2}, _from, state) do
 		try do
 			# This can produce a non-deterministic automaton...
@@ -204,6 +209,9 @@ defmodule Athena.EFSMServer do
 	end
 	def get_next_merge(pid) do
 		GenServer.call(pid,:next_merge)
+	end
+	def add_trans(pid,from,to,tran) do
+		GenServer.call(pid,{:add_trans,from,to,tran})
 	end
 	
 end

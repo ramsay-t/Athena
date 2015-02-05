@@ -117,6 +117,20 @@ defmodule Athena.EFSMServerTest do
 		assert Server.get(pid,:compmap) != %{}
 	end
 
+	test "Add transition" do
+		pid = load_vend1()
+		tran = %{
+						 label: "select",
+						 guards: [],
+						 outputs: [],
+						 updates: [{:assign,:r1,{:v,:i1}}],
+						 sources: [%{trace: 1, event: 1},%{trace: 3, event: 1}]
+						}
+		assert Server.add_trans(pid,"0","1",tran) == :ok
+		assert Server.to_dot(pid) == "digraph EFSM {\n\"0\" -> \"1,7\" [ label=<select/[r<SUB>1</SUB> := i<SUB>1</SUB>] >]\n\"1,7\" -> \"2,8\" [ label=<coin[i<SUB>1</SUB> = \"50\"]/o<SUB>1</SUB> := \"50\" >]\n\"1,7\" -> \"5\" [ label=<coin[i<SUB>1</SUB> = \"100\"]/o<SUB>1</SUB> := \"100\" >]\n\"2,8\" -> \"3,9\" [ label=<coin[i<SUB>1</SUB> = \"50\"]/o<SUB>1</SUB> := \"100\" >]\n\"3,9\" -> \"10\" [ label=<vend/o<SUB>1</SUB> := \"pepsi\" >]\n\"3,9\" -> \"4\" [ label=<vend/o<SUB>1</SUB> := \"coke\" >]\n\"5\" -> \"6\" [ label=<vend/o<SUB>1</SUB> := \"coke\" >]\n}\n"
+		assert Server.get_next_merge(pid) == {{"3,9", "5"}, 2.96}
+	end
+
 	test "Add traces live" do
 		pid = load_vend1()
 		Server.add_traces(pid,[[
