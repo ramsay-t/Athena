@@ -48,8 +48,8 @@ defmodule Athena.EFSM do
 					{prefix,suffix} = Enum.split(t,length(prefix))
 					{newefsm,newhits} =extend(length(prefix),suffix,tn,state,add_source(path,prefix,tn,efsm)) 
 					add_traces_step(ts,newefsm,start,hits++[state|newhits])
-				{:nondeterministic,{start,bind},e,path} ->
-					raise Athena.LearnException, message: :io_lib.format("Non-deterministic choice at ~p~n~p~n~p~n",[{start,bind},e,path])
+				{:nondeterministic,{start,bind},e,path,pos} ->
+					raise Athena.LearnException, message: :io_lib.format("Non-deterministic choice between ~p at ~p~n~p~n~p~n",[pos,{start,bind},e,path])
 			end
 		end
 	end
@@ -151,7 +151,6 @@ defmodule Athena.EFSM do
 				if ns == nm do
 					{:v,(t <> "<SUB>" <> n <> "</SUB>")}
 				else
-					:io.format("~p not ~p in ~p~n",[name,nm,[nm,t,n]])
 					{:v,to_string(name)}
 				end
 			_ ->
@@ -192,7 +191,7 @@ defmodule Athena.EFSM do
 		{:ok,{String.t,bindings},list(bindings),list({String.t,String.t})} 
 	| {:failed_after,String.t,{String.t,bindings},list({String.t,String.t})}
 	| {:output_missmatch,String.t,{String.t,bindings},%{:event => Athena.event, :observed => list(%{Epagoge.Exp.varname_t => String.t})},list({String.t,String.t})}
-	| {:nondeterministic,{String.t,bindings},Athena.event,list({String.t,String.t})}
+	| {:nondeterministic,{String.t,bindings},Athena.event,list({String.t,String.t}),list(String.t)}
 	def walk(trace,{state,bindings},efsm) do
 		walk_step(trace,[],[],{state,bindings},[],efsm)
 	end
@@ -238,8 +237,8 @@ defmodule Athena.EFSM do
 				else
 					{:output_missmatch,previous,{start,bind},%{:event => e, :observed => osstring},path}
 				end
-			_pos -> 
-				{:nondeterministic,{start,bind},e,path}
+			pos -> 
+				{:nondeterministic,{start,bind},e,path,Enum.map(pos,fn({to,_}) -> to end)}
 		end
 	end
 
@@ -285,7 +284,6 @@ defmodule Athena.EFSM do
 	end
 
 	def merge(s1,s2,efsm,ignore) do
-		#:io.format("Merging ~p and ~p~n",[s1,s2])
 		newname = if s1 == s2 do s1 else to_string(s1) <> "," <> to_string(s2) end
 		# Replace old elements of the transition matrix with the new state
 		{newefsm,alltrans} = List.foldl(Map.keys(efsm),
@@ -342,7 +340,7 @@ defmodule Athena.EFSM do
 		[]
 	end
 	defp pick_merge_trans([t1 | ts]) do
-		#:io.format("Merging ~n~p~n into ~n~p~n --->>> ~n~p~n-----------------------------------~n",[t1,ts,elem(merge_one(t1,ts),0)])
+		#:io.format("Merging ~n~p~n into ~n~p~n --->>> ~n~p~n-----------------------------------~n",[t1,ts,merge_one(t1,ts)])
 		{newts,restts} = merge_one(t1,ts)
 		newts ++ pick_merge_trans(restts)
 	end
@@ -352,11 +350,14 @@ defmodule Athena.EFSM do
 	end
 	defp merge_one(t, [o | os]) do
 		if Athena.Label.subsumes?(t,o) do
-			{[Map.put(t,:sources,:lists.usort(t[:sources] ++ o[:sources]))],os}
+			newtran = Map.put(t,:sources,:lists.usort(t[:sources] ++ o[:sources]))
+			merge_one(newtran,os)
 		else 
 			if Athena.Label.subsumes?(o,t) do
-				{[Map.put(o,:sources,:lists.usort(o[:sources] ++ t[:sources]))],os}
+				newtran = Map.put(o,:sources,:lists.usort(t[:sources] ++ o[:sources]))
+				merge_one(newtran,os)
 			else
+				#:io.format("~p~n not ~n~p~n~n",[t,o])
 				{n,ns} = merge_one(t,os)
 				{[o|n],ns}
 			end

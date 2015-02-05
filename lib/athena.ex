@@ -1,4 +1,5 @@
 defmodule Athena do
+	alias Athena.EFSMServer, as: Server
 
 	@type event :: %{:label => String.t, :inputs => list(String.t), :outputs => list(String.t)}
 	@type trace :: list(event)
@@ -12,92 +13,109 @@ defmodule Athena do
   The learning will continue until the score of the best possible merge falls below the threshold.
   """
 	@spec learn(list(trace),(Athena.EFSM.t -> {float,{String.t,String.t}}), float) :: Athena.EFSM.t
-	def learn(traces, merge_selector \\ &Athena.KTails.selector(2,&1), threshold \\ 2.0) do
-		traceset = make_trace_set(traces)
-		:io.format("Building PTA...~n")
-		efsm = Athena.EFSM.build_pta(traceset)
-		#:io.format("PTA:~n~p~n",[Athena.EFSM.to_dot(efsm)])
-		:io.format("Detecting Intra-trace dependencies...~n")
-		intras = Athena.Intratrace.get_intra_set(traceset)
-
-		:io.format("Learning... [~p states]~n",[length(Athena.EFSM.get_states(efsm))])
-		learn_step(efsm, traceset, intras, merge_selector.(efsm), merge_selector, threshold, [])
+	def learn(traces, _merge_selector \\ &Athena.KTails.selector(2,&1), threshold \\ 2.0) do
+		{:ok,pid} = Server.start_link()
+		:io.format("Loading ~p traces...~n",[length(traces)])
+		Server.add_traces(pid,traces)
+		#FIXME add configurable merge selector
+		#File.write("current_efsm" <> to_string(elem(:erlang.now(),2)) <> ".dot",Server.to_dot(pid),[:write])
+		File.write("current_efsm.dot",Server.to_dot(pid),[:write])
+		:io.format("Learning... [~p states]~n",[length(Server.get_states(pid))])
+		learn_step(pid,[],threshold)
 	end
 
-	defp learn_step(efsm, _traceset, _intras, [], _merge_selector, _threshold, _doneinters) do
-		efsm
+	defp get_next_accepted_merge(pid,skips,offset) do
+		m = Server.get_merge(pid,offset)
+		if Enum.any?(skips,fn(s) -> s == m end) do
+			get_next_accepted_merge(pid,skips,offset+1)
+		else
+			m
+		end
 	end
-	defp learn_step(efsm, traceset, intras, [{score,{s1,s2}} | moremerges], merge_selector, threshold, doneinters) do
-		#:io.format("EFSM:~n~p~n",[Athena.EFSM.to_dot(efsm)])
-		:io.format("Best Merge: ~p~n",[{score,{s1,s2}}])
+
+	defp learn_step(pid,skips,threshold) do
+		{{s1,s2},score} = get_next_accepted_merge(pid,skips,0)
+		:io.format("Best Merge: ~p~n",[{{s1,s2},score}])
 		if score < threshold do
+			efsm = Server.get(pid,:efsm)
+			Server.stop(pid)
 			efsm
 		else
+			Server.save(pid)
 			try do
-				{newefsm,merges} = Athena.EFSM.merge(s1,s2,efsm)
-				
-				#:io.format("Mid EFSM:~n~p~n",[Athena.EFSM.to_dot(newefsm)])
-				interesting = Enum.map(merges,fn({a,b}) -> if a == b do a else a <> "," <> b end end)
-				inters = Athena.Intertrace.get_inters(newefsm,traceset,intras)
-				filtered = Enum.filter(inters, fn(done) -> not Enum.any?(doneinters,fn(d) -> d == done end) end)
-				{finalefsm,newnewdoneinters} = inter_step(newefsm, traceset, intras, [], filtered, [], interesting)
-				newdoneinters = :lists.usort(newnewdoneinters ++ doneinters)
-				File.write("current_efsm.dot",Athena.EFSM.to_dot(finalefsm),[:write])
-						
-				#:io.format("Final EFSM:~n~p~n",[Athena.EFSM.to_dot(finalefsm)])
-				#:io.format("~n~p~n",[finalefsm])
-				
-				:io.format("Computing next merge... [~p states]~n",[length(Athena.EFSM.get_states(finalefsm))])
-				learn_step(finalefsm, traceset, intras, merge_selector.(finalefsm), merge_selector, threshold, newdoneinters)
+				case Server.merge(pid,s1,s2) do
+					{:ok,merges} ->
+						interesting = Enum.map(merges,fn({a,b}) -> if a == b do a else a <> "," <> b end end)
+						inters = Athena.Intertrace.get_inters(pid)
+						inter_step(pid, inters, [], interesting)
+						File.write("current_efsm" <> to_string(elem(:erlang.now(),2)) <> ".dot",Server.to_dot(pid),[:write])
+						:io.format("Computing next merge... [~p states]~n",[length(Server.get_states(pid))])
+						learn_step(pid,[],threshold)
+					
+					#filtered = Enum.filter(inters, fn(done) -> not Enum.any?(doneinters,fn(d) -> d == done end) end)
+					#{finalefsm,newnewdoneinters} = inter_step(newefsm, traceset, intras, [], filtered, [], interesting)
+					#newdoneinters = :lists.usort(newnewdoneinters ++ doneinters)
+					
+					#:io.format("Final EFSM:~n~p~n",[Athena.EFSM.to_dot(finalefsm)])
+					#:io.format("~n~p~n",[finalefsm])
+					
+					_ ->
+						raise Athena.LearnException, message: "Merge failed"
+				end
 			rescue
 				_e in Athena.LearnException ->
-					:io.format("That merge failed...~n",[])
+					:io.format("That merge failed...~n")
+					Server.revert(pid)
 					# Made something invalid somewhere...
-					learn_step(efsm, traceset, intras, moremerges, merge_selector, threshold, doneinters)
+					learn_step(pid,[{{s1,s2},score}|skips],threshold)
 			end
 		end
 	end
 
-	defp inter_step(efsm, _traceset, _intras, ignore, [], done, _interesing) do
-		{efsm,done}
+	defp inter_step(_pid, [], _ignore, _interesing) do
+		:ok
 	end
-	defp inter_step(efsm, traceset, intras, ignore, [inter | more], done, interesting) do
+	defp inter_step(pid, [inter | more], ignore, interesting) do
 		# FIXME interesting is not used...
 		if Enum.any?(ignore,fn(i) -> i == inter end) do
-			inter_step(efsm, traceset, intras, ignore, more, done, interesting)
+			inter_step(pid, more, ignore, interesting)
 		else
 			try do
-				#:io.format("Applying ~p...~n",[inter])
-				{midefsm,vname} = fix_first(efsm,traceset,inter)
-				fixedefsm = fix_second(midefsm,traceset,inter,vname)
+				Server.save(pid)
+				vname = fix_first(pid,inter)
+				fix_second(pid,inter,vname)
 				{s1,s2,{tn1,i1},{tn2,i2}} = inter
-				# Now merge the states into themselves to clean up transitions
-				#:io.format("Updating ~p and ~p...~n",[s1,s2])
-				{m1efsm,_} = Athena.EFSM.merge(s1,s1,fixedefsm)
-				{m2efsm,_} = Athena.EFSM.merge(s2,s2,m1efsm)
+				Server.merge(pid,s1,s1)
+				Server.merge(pid,s2,s2)
 				# Check we didn't break anything...
-				Enum.map(traceset, fn({_,t}) -> Athena.EFSM.walk(t,m2efsm) end)
-				#:io.format("Made:~n~p~n~n",[Athena.EFSM.to_dot(fixedefsm)])
-				case Athena.Intertrace.get_inters(m2efsm,traceset,intras) do
-					[] -> {fixedefsm,done}
-					inters -> 
-						filtered = Enum.filter(inters, fn(ir) -> not  Enum.any?([inter | ignore++done],fn(i) -> i == ir end)  end)
-						:io.format("~p~nWorked! [~p more, ~p ignored, ~p applied]~n",[inter,length(filtered),length(ignore)+1,length(done)+1])
-						inter_step(m2efsm, traceset, intras, ignore, filtered,[inter | done],interesting)
+				if Server.is_ok?(pid) do
+					#:io.format("Made:~n~p~n~n",[Athena.EFSM.to_dot(fixedefsm)])
+					case Athena.Intertrace.get_inters(pid) do
+						[] -> :ok
+						inters -> 
+							filtered = Enum.filter(inters, fn(ir) -> not Enum.any?([inter | ignore],fn(i) -> i == ir end)  end)
+							:io.format("~p~nWorked! [~p more, ~p ignored]~n",[inter,length(filtered),length(ignore)+1])
+							inter_step(pid, filtered, [inter | ignore], interesting)
+					end
+				else
+					raise Athena.LearnException, message: "Failed check"
 				end
-				rescue
-					_e in Athena.LearnException ->
-					:io.format("Inter failed... [~p more, ~p ignored, ~p applied]~n",[length(more), length(ignore)+1, length(done)])
-					inter_step(efsm,traceset,intras,ignore,more,done,interesting)
+			rescue
+				_e in Athena.LearnException ->
+					Server.revert(pid)
+					:io.format("Inter broke... [~p more, ~p ignored]~n",[length(more), length(ignore)+1])
+					inter_step(pid,more,[inter | ignore],interesting)
 			end
 		end
 	end
 
-	defp fix_first(efsm,traceset,{s1,_,{tn1,i1},{tn2,i2}}) do
+	defp fix_first(pid,{s1,_,{tn1,i1},{tn2,i2}}) do
 		{e1n,io,idx} = i1[:fst]
 		{e2n,io,idx} = i2[:fst]
 
+		efsm = Server.get(pid,:efsm)
 		transet = get_trans_set(efsm,s1)
+		traceset = Server.get(pid,:traceset)
 		{from1,to1,tran1} = get_trans_tuple(transet,tn1,e1n)
 		{from2,to2,tran2} = get_trans_tuple(transet,tn2,e2n)
 		str1 = get_event_content(traceset,tn1,e1n,io,idx)
@@ -131,8 +149,9 @@ defmodule Athena do
 						newtrans1 = Map.put(Map.put(tran1,:guards,newguards1),:updates,newupdates1)
 						newtrans2 = Map.put(Map.put(tran2,:guards,newguards2),:updates,newupdates2)
 
-						{new_transitions(efsm,s1,{from1,to1},{from2,to2},newtrans1,newtrans2),
-						 rname}
+						Server.add_trans(pid,from1,to1,newtrans1)
+						Server.add_trans(pid,from2,to2,newtrans2)
+						rname
 					:output ->
 						{rname,nu} = 
 							make_update_if_needed(efsm,pre,suf,ioname,tran1[:updates]++tran2[:updates])
@@ -158,19 +177,22 @@ defmodule Athena do
 						newtrans1 = Map.put(Map.put(tran1,:updates,newupdates1),:outputs,newops1)
 						newtrans2 = Map.put(Map.put(tran2,:updates,newupdates1),:outputs,newops2)
 
-						{new_transitions(efsm,s1,{from1,to1},{from2,to2},newtrans1,newtrans2),
-						 rname}
+						Server.add_trans(pid,from1,to1,newtrans1)
+						Server.add_trans(pid,from2,to2,newtrans2)
+						rname
 				end
 		end
 	end
 
-	defp fix_second(efsm,traceset,{_,s2,{tn1,i1},{tn2,i2}},rname) do
+	defp fix_second(pid,{_,s2,{tn1,i1},{tn2,i2}},rname) do
 
 		{e1n,io,idx} = i1[:snd]
 		{e2n,io,idx} = i2[:snd]
 
-		#:io.format("EFSM~n~p~n~n",[efsm])
+		efsm = Server.get(pid,:efsm)
 		transet = get_trans_set(efsm,s2)
+		traceset = Server.get(pid,:traceset)
+
 		{from1,to1,tran1} = get_trans_tuple(transet,tn1,e1n)
 		{from2,to2,tran2} = get_trans_tuple(transet,tn2,e2n)
 		str1 = get_event_content(traceset,tn1,e1n,io,idx)
@@ -195,7 +217,9 @@ defmodule Athena do
 								
 								newtrans1 = Map.put(tran1,:guards,newguards1)
 								newtrans2 = Map.put(tran2,:guards,newguards2)
-								new_transitions(efsm,s2,{from1,to1},{from2,to2},newtrans1,newtrans2)
+
+								Server.add_trans(pid,from1,to1,newtrans1)
+								Server.add_trans(pid,from2,to2,newtrans2)
 						end
 					:output ->
 						case make_assign_if_needed(ioname,pre,suf,rname,tran1[:outputs]++tran2[:outputs]) do
@@ -208,19 +232,12 @@ defmodule Athena do
 								
 								newtrans1 = Map.put(tran1,:outputs,newops1)
 								newtrans2 = Map.put(tran2,:outputs,newops2)
-								new_transitions(efsm,s2,{from1,to1},{from2,to2},newtrans1,newtrans2)
+
+								Server.add_trans(pid,from1,to1,newtrans1)
+								Server.add_trans(pid,from2,to2,newtrans2)
 						end
 				end
 		end
-	end
-
-	defp new_transitions(efsm,s,{from1,to1},{from2,to2},newtrans1,newtrans2) do 
-		# Add the new transition to both places, then merge the state with itself to force re-check of subsuming transitions
-		# The new transition should subsume both of the old ones
-		Map.put(
-						Map.put(efsm,{from1,to1},[newtrans1 | efsm[{from1,to1}]]),
-								{from2,to2},[newtrans2 | efsm[{from2,to2}]]
-					)
 	end
 
 	defp gen_update("","",ioname,rname) do

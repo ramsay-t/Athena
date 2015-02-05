@@ -29,9 +29,24 @@ defmodule Athena.EFSMServer do
 										:intras => newintras,
 										:k => state[:k],
 										:kmap => newkmap,
-										:compmap => newcompmap}}
+										:compmap => newcompmap,
+										:save => state[:save]}}
 		else
 			{:reply,:failed,state}
+		end
+	end
+	def handle_call(:stop,_from,state) do
+		{:stop,:normal,:shutdown_ok,state}
+	end
+	def handle_call(:save,_from,state) do
+		{:reply,:ok,Map.put(state,:save,state)}
+	end
+	def handle_call(:revert,_from,state) do
+		case state[:save] do
+			nil ->
+				{:reply,{:failed,"No save"},state}
+			_ ->
+				{:reply,:ok,state[:save]}
 		end
 	end
 	def handle_call(:check,_from,state) do
@@ -42,9 +57,14 @@ defmodule Athena.EFSMServer do
 		end
 	end
 	def handle_call({:add_trans,from,to,tran},_from,state) do
-		newefsm = Map.put(state[:efsm],{from,to},[tran | state[:efsm][{from,to}]])
-		# Merge tate into itself to clean up
-		handle_call({:merge,from,from},_from,Map.put(state,:efsm,newefsm))
+		newefsm =
+			case state[:efsm][{from,to}] do
+				nil ->
+					Map.put(state[:efsm],{from,to},[tran])
+				ctrans ->
+					Map.put(state[:efsm],{from,to},[tran | ctrans])
+			end
+		{:reply,:ok,Map.put(state,:efsm,newefsm)}
 	end
 	def handle_call({:merge,s1,s2}, _from, state) do
 		try do
@@ -62,14 +82,16 @@ defmodule Athena.EFSMServer do
 			midkmap = Map.drop(state[:kmap],statehits)
 			newkmap = update_kmap(newefsm,state[:k],midkmap,statehits)
 			newcompmap = update_compmap(newkmap,EFSM.get_states(newefsm),statehits,state[:compmap])
-			{:reply,:ok,%{:efsm => newefsm,
-										 :traceset => state[:traceset],
-										 :intras => state[:intras],
-										 :k => state[:k],
-										 :kmap => newkmap,
-										 :compmap => newcompmap}}
+			{:reply,{:ok,merges},%{:efsm => newefsm,
+														 :traceset => state[:traceset],
+														 :intras => state[:intras],
+														 :k => state[:k],
+														 :kmap => newkmap,
+														 :compmap => newcompmap,
+														 :save => state[:save]}}
 		rescue
 			_e in Athena.LearnException ->
+				:io.format("FAILED TO REBUILD COMPS~n")
 				{:reply,:failed,state}
 		end
 	end
@@ -82,9 +104,12 @@ defmodule Athena.EFSMServer do
 	def handle_call(:next_merge,_from,state) do
 		{:reply,get_best_comp(state[:compmap]),state}
 	end
+	def handle_call({:get_merge,offset},_from,state) do
+		{:reply,get_offset_merge(state[:compmap],offset),state}
+	end
 
 	defp get_next_tn(tset) do
-		get_next_tn(tset,-1)
+		get_next_tn(tset,0)
 	end
 	defp get_next_tn([],n) do
 		n+1
@@ -175,6 +200,29 @@ defmodule Athena.EFSMServer do
 							 end)
 	end
 
+	defp get_offset_merge(compmap,offset) do
+		list = List.foldl(Map.keys(compmap),
+													[],
+													fn(key,bestlist) ->
+															score = compmap[key]
+															Enum.sort(if length(bestlist) < offset+1 do
+																					[{key,score} | bestlist]
+																				else
+																					if score > elem(hd(bestlist),1) do
+																						[{key,score} | tl(bestlist)]
+																					else
+																						bestlist
+																					end
+																				end, 
+																				&(elem(&1,1) < elem(&2,1)))
+													end)
+		if length(list) < offset+1 do
+			nil
+		else
+			hd(list)
+		end
+	end
+
 	# API functions
 	def start_link() do
 		GenServer.start_link(Athena.EFSMServer,%{:efsm => %{},
@@ -188,7 +236,9 @@ defmodule Athena.EFSMServer do
 	def add_traces(pid,traces) do
 		GenServer.call(pid,{:addtraces,traces})
 	end
-
+	def stop(pid) do
+		GenServer.call(pid,:stop)
+	end
 	def get_intras(pid) do
 		GenServer.call(pid,{:get,:intras})
 	end
@@ -213,5 +263,14 @@ defmodule Athena.EFSMServer do
 	def add_trans(pid,from,to,tran) do
 		GenServer.call(pid,{:add_trans,from,to,tran})
 	end
-	
+	def get_merge(pid,offset) do
+		GenServer.call(pid,{:get_merge,offset})
+	end
+	def save(pid) do
+		GenServer.call(pid,:save)
+	end
+	def revert(pid) do
+		GenServer.call(pid,:revert)
+	end
+
 end

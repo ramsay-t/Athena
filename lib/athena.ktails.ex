@@ -46,7 +46,6 @@ defmodule Athena.KTails do
 		List.foldl(List.zip([:lists.seq(0,length(states)),states]), 
 									 %{},
 									 fn({idx,n},acc) ->
-											 :io.format("[~p]...",[idx])
 											 # We only need the triangle matrix
 											 {_,later} = Enum.split(states,idx+1)
 											 List.foldl(later,acc,fn(m,a2) -> Map.put(a2,{n,m},compare(n,m,tails)) end)

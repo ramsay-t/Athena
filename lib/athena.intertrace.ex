@@ -37,6 +37,10 @@ defmodule Athena.Intertrace do
 							 end)
 	end
 
+	def get_inters(pid) do
+		get_inters(Athena.EFSMServer.get(pid,:efsm),Athena.EFSMServer.get(pid,:traceset),Athena.EFSMServer.get(pid,:intras))
+	end
+
 	@spec find_firsts(list(Athena.Label.t),%{integer => list(Athena.Intratrace.t)}) :: list({integer, Athena.Intratrace.t})
 	defp find_firsts(transs,intras) do
 		List.foldl(transs,
