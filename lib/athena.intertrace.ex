@@ -17,12 +17,12 @@ defmodule Athena.Intertrace do
 	# This is two elements of: {State name, trace id, Intra}
 	@type t :: {String.t,String.t,{integer,Intra.t},{integer,Intra.t}}
 
-	@spec get_inters(Athena.EFSM.t,Athena.traceset,%{integer => Athena.Intratrace.t}) :: list(t)
-	def get_inters(efsm,traceset,intras) do
+	#@spec get_inters(Athena.EFSM.t,Athena.traceset,%{integer => Athena.Intratrace.t}) :: list(t)
+	def get_inters(efsm,traceset,intras,interesting_traces) do
 		# Get sets of intras for which the start states match something interesting
 		firsts = Enum.map(Map.keys(efsm),
 								 fn({from,to}) ->
-										 {from,find_firsts(efsm[{from,to}],intras)}
+										 {from,find_firsts(efsm[{from,to}],intras,interesting_traces)}
 								 end
 						)
 		List.foldl(firsts,
@@ -37,27 +37,31 @@ defmodule Athena.Intertrace do
 							 end)
 	end
 
-	def get_inters(pid) do
-		get_inters(Athena.EFSMServer.get(pid,:efsm),Athena.EFSMServer.get(pid,:traceset),Athena.EFSMServer.get(pid,:intras))
+	def get_inters(pid,interesting) do
+		get_inters(Athena.EFSMServer.get(pid,:efsm),Athena.EFSMServer.get(pid,:traceset),Athena.EFSMServer.get(pid,:intras),interesting)
 	end
 
-	@spec find_firsts(list(Athena.Label.t),%{integer => list(Athena.Intratrace.t)}) :: list({integer, Athena.Intratrace.t})
-	defp find_firsts(transs,intras) do
+	#@spec find_firsts(list(Athena.Label.t),%{integer => list(Athena.Intratrace.t)}) :: list({integer, Athena.Intratrace.t})
+	defp find_firsts(transs,intras,interesting_traces) do
 		List.foldl(transs,
 							 [],
 							 fn(label,acc) ->
 									 List.foldl(label[:sources],
 															acc,
 															fn(source,acc) ->
-																	List.foldl(intras[source[:trace]],
-																						 acc,
-																						 fn(intra,acc) ->
-																								 if (source[:event] == elem(intra[:fst],0)) do
-																									 [ {source[:trace],intra} | acc]
-																								 else
-																									 acc
-																								 end
-																						 end)
+																	if Enum.any?(interesting_traces, fn(interest) -> interest == source[:trace] end) do
+																		List.foldl(intras[source[:trace]],
+																							 acc,
+																							 fn(intra,acc) ->
+																									 if (source[:event] == elem(intra[:fst],0)) do
+																										 [ {source[:trace],intra} | acc]
+																									 else
+																										 acc
+																									 end
+																							 end)
+																	else
+																		acc
+																	end
 															end)
 							 end)
 	end

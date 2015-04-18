@@ -12,11 +12,12 @@ defmodule Athena do
   unless this produces non-determinism, in which case it will try the next pair. 
   The learning will continue until the score of the best possible merge falls below the threshold.
   """
-	@spec learn(list(trace),(Athena.EFSM.t -> {float,{String.t,String.t}}), float) :: Athena.EFSM.t
-	def learn(traces, _merge_selector \\ &Athena.KTails.selector(2,&1), threshold \\ 2.0) do
+	#@spec learn(list(trace),(Athena.EFSM.t -> {float,{String.t,String.t}}), float) :: Athena.EFSM.t
+	def learn(traces, k, threshold \\ 2.0) do
 		{:ok,pid} = Server.start_link()
 		:io.format("Loading ~p traces...~n",[length(traces)])
 		Server.add_traces(pid,traces)
+		Server.set_k(pid,k)
 		#FIXME add configurable merge selector
 		#File.write("current_efsm" <> to_string(elem(:erlang.now(),2)) <> ".dot",Server.to_dot(pid),[:write])
 		File.write("current_efsm.dot",Server.to_dot(pid),[:write])
@@ -45,20 +46,16 @@ defmodule Athena do
 			try do
 				case Server.merge(pid,s1,s2) do
 					{:ok,merges} ->
-						interesting = Enum.map(merges,fn({a,b}) -> if a == b do a else a <> "," <> b end end)
-						inters = Athena.Intertrace.get_inters(pid)
-						inter_step(pid, inters, [], interesting)
-						File.write("current_efsm" <> to_string(elem(:erlang.now(),2)) <> ".dot",Server.to_dot(pid),[:write])
+						newefsm = Server.get(pid,:efsm)
+						interesting_states = Enum.map(merges,fn({a,b}) -> if a == b do a else a <> "," <> b end end)
+						interesting_traces = Server.get_traces_through(pid,interesting_states)
+						:io.format("Computing Intertrace Dependencies...~nInteresting: ~p~n",[interesting_traces])
+						inters = Athena.Intertrace.get_inters(pid,interesting_traces)
+						inter_step(pid, inters, [])
+						#File.write("current_efsm" <> to_string(elem(:erlang.now(),2)) <> ".dot",Server.to_dot(pid),[:write])
+						File.write("current_efsm.dot",Server.to_dot(pid),[:write])
 						:io.format("Computing next merge... [~p states]~n",[length(Server.get_states(pid))])
 						learn_step(pid,[],threshold)
-					
-					#filtered = Enum.filter(inters, fn(done) -> not Enum.any?(doneinters,fn(d) -> d == done end) end)
-					#{finalefsm,newnewdoneinters} = inter_step(newefsm, traceset, intras, [], filtered, [], interesting)
-					#newdoneinters = :lists.usort(newnewdoneinters ++ doneinters)
-					
-					#:io.format("Final EFSM:~n~p~n",[Athena.EFSM.to_dot(finalefsm)])
-					#:io.format("~n~p~n",[finalefsm])
-					
 					_ ->
 						raise Athena.LearnException, message: "Merge failed"
 				end
@@ -72,30 +69,33 @@ defmodule Athena do
 		end
 	end
 
-	defp inter_step(_pid, [], _ignore, _interesing) do
+	defp inter_step(_pid, [], _ignore) do
 		:ok
 	end
-	defp inter_step(pid, [inter | more], ignore, interesting) do
+	defp inter_step(pid, [inter | more], ignore) do
 		# FIXME interesting is not used...
 		if Enum.any?(ignore,fn(i) -> i == inter end) do
-			inter_step(pid, more, ignore, interesting)
+			inter_step(pid, more, ignore)
 		else
 			try do
 				Server.save(pid)
 				vname = fix_first(pid,inter)
 				fix_second(pid,inter,vname)
 				{s1,s2,{tn1,i1},{tn2,i2}} = inter
-				Server.merge(pid,s1,s1)
-				Server.merge(pid,s2,s2)
+				{:ok,m1} = Server.merge(pid,s1,s1)
+				{:ok,m2} = Server.merge(pid,s2,s2)
 				# Check we didn't break anything...
 				if Server.is_ok?(pid) do
 					#:io.format("Made:~n~p~n~n",[Athena.EFSM.to_dot(fixedefsm)])
-					case Athena.Intertrace.get_inters(pid) do
+					interesting_states = Enum.map(m1++m2,fn({a,b}) -> if a == b do a else a <> "," <> b end end)
+					interesting_traces = Server.get_traces_through(pid,interesting_states)
+					#:io.format("Computing Intertrace Dependencies...~nInteresting: ~p~n",[interesting_traces])
+					case Athena.Intertrace.get_inters(pid,interesting_traces) do
 						[] -> :ok
 						inters -> 
 							filtered = Enum.filter(inters, fn(ir) -> not Enum.any?([inter | ignore],fn(i) -> i == ir end)  end)
 							:io.format("~p~nWorked! [~p more, ~p ignored]~n",[inter,length(filtered),length(ignore)+1])
-							inter_step(pid, filtered, [inter | ignore], interesting)
+							inter_step(pid, filtered, [inter | ignore])
 					end
 				else
 					raise Athena.LearnException, message: "Failed check"
@@ -103,8 +103,8 @@ defmodule Athena do
 			rescue
 				_e in Athena.LearnException ->
 					Server.revert(pid)
-					:io.format("Inter broke... [~p more, ~p ignored]~n",[length(more), length(ignore)+1])
-					inter_step(pid,more,[inter | ignore],interesting)
+					#:io.format("Inter broke... [~p more, ~p ignored]~n",[length(more), length(ignore)+1])
+					inter_step(pid,more,[inter | ignore])
 			end
 		end
 	end
@@ -175,7 +175,7 @@ defmodule Athena do
 						end
 
 						newtrans1 = Map.put(Map.put(tran1,:updates,newupdates1),:outputs,newops1)
-						newtrans2 = Map.put(Map.put(tran2,:updates,newupdates1),:outputs,newops2)
+						newtrans2 = Map.put(Map.put(tran2,:updates,newupdates2),:outputs,newops2)
 
 						Server.add_trans(pid,from1,to1,newtrans1)
 						Server.add_trans(pid,from2,to2,newtrans2)

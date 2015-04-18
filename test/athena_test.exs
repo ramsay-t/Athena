@@ -70,17 +70,17 @@ defmodule Athena.AthenaTest do
 
   test "Learn simple vending machine" do
 		justtraces = Enum.map(ts1, fn({_,t}) -> t end)
-		efsm = Athena.learn(justtraces,&Athena.KTails.selector(4,&1),1.5)
+		efsm = Athena.learn(justtraces,4,1.5)
 		#:io.format("FINAL EFSM:~n~p~n",[Athena.EFSM.to_dot(efsm)])
 		assert efsm == finalefsm
   end
 
-	@tag timeout: 120000
+	@tag timeout: 1200000
 	test "Learn bigger vending machine" do
-		#traces = Athena.Tracefile.load_json_file("sample-traces/vend2.json")
-		#efsm = Athena.learn(traces,&Athena.KTails.selector(1,&1),1)
+		traces = Athena.Tracefile.load_json_file("sample-traces/vend2.json")
+		efsm = Athena.learn(traces,1,1.5)
 		#:io.format("FINAL EFSM:~n~p~n",[Athena.EFSM.to_dot(efsm)])
-		#assert efsm == biggerfinalefsm
+		assert efsm == biggerfinalefsm
 	end
 
 	defp biggerfinalefsm do

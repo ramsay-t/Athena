@@ -39,18 +39,18 @@ defmodule Athena.KTails do
 		end
 	end
 
-	@spec compare_all(Athena.EFSM.t,integer) :: list(%{{String.t,String.t} => float})
-	def compare_all(efsm,k) do
-		tails = get_tails(efsm,k)
+	def compare_all(efsm,tails) do
 		states = EFSM.get_states(efsm)
-		List.foldl(List.zip([:lists.seq(0,length(states)),states]), 
-									 %{},
-									 fn({idx,n},acc) ->
+		map = Enum.concat(Enum.map(List.zip([:lists.seq(0,length(states)),states]), 
+									 fn({idx,n}) ->
+											 :io.format("~p [~p]...",[idx,n])
 											 # We only need the triangle matrix
 											 {_,later} = Enum.split(states,idx+1)
-											 List.foldl(later,acc,fn(m,a2) -> Map.put(a2,{n,m},compare(n,m,tails)) end)
+											 Enum.map(later,fn(m) -> {{n,m},compare(n,m,tails)} end)
 									 end
-							)
+							))
+		:io.format("~n")
+		:lists.usort(map)
 	end
 
 	def compare(n,m,tails) do

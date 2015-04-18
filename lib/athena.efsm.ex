@@ -35,7 +35,7 @@ defmodule Athena.EFSM do
 	def add_traces_step([{tn,t} | ts], efsm, start, hits) do
 		if efsm == %{} do
 			{newefsm,hits} = extend(0,t,tn,start,efsm)
-			add_traces_step(ts,newefsm,start,hits)
+			add_traces_step(ts,newefsm,start,[start|hits])
 		else
 			case walk(t,{start,%{}},efsm) do
 				{:ok,_state,_outputs,path} -> 
