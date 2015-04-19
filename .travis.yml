@@ -2,7 +2,7 @@ language: erlang
 otp_release:
 # 17.2 not supported by travis
 # 17.1 some deps fail to build (hackney?)
-   - 17.5
+#Not yet supported...   - 17.5
    - 17.4
    - 17.3
    - 17.0
