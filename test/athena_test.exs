@@ -70,20 +70,54 @@ defmodule Athena.AthenaTest do
 
   test "Learn simple vending machine" do
 		efsm = Athena.learn(ts1,4,1.5)
-		#:io.format("FINAL EFSM:~n~p~n",[Athena.EFSM.to_dot(efsm)])
 		assert efsm == finalefsm
   end
 
-	#@tag timeout: 1200000
-	#test "Learn bigger vending machine" do
-		#traces = Athena.Tracefile.load_json_file("sample-traces/vend2.json")
-		#efsm = Athena.learn(Athena.make_trace_set(traces),1,1.5)
-		#:io.format("FINAL EFSM:~n~p~n",[Athena.EFSM.to_dot(efsm)])
-		#assert efsm == biggerfinalefsm
-	#end
+	test "Learn vending machine with more products" do
+		traces = Athena.Tracefile.load_json_file("sample-traces/vend3.json")
+		efsm = Athena.learn(Athena.make_trace_set(traces),1,1.5)
+		assert efsm == vend3final
+	end
+
+	defp vend3final do
+		%{{"0",
+			 "1,7,13"} => [%{guards: [], label: "select", outputs: [],
+											 sources: [%{event: 1, trace: 1}, %{event: 1, trace: 2},
+																 %{event: 1, trace: 3}, %{event: 1, trace: 4}, %{event: 1, trace: 5},
+																 %{event: 1, trace: 6}], updates: [{:assign, :r1, {:v, :i1}}]}],
+			{"1,7,13",
+			 "15,3,5,9,11,17"} => [%{guards: [{:eq, {:v, :i1}, {:lit, "100"}}],
+															 label: "coin", outputs: [{:assign, :o1, {:lit, "100"}}],
+															 sources: [%{event: 2, trace: 2}, %{event: 2, trace: 4},
+																				 %{event: 2, trace: 6}], updates: []}],
+			{"1,7,13",
+			 "2,8,14"} => [%{guards: [{:eq, {:v, :i1}, {:lit, "50"}}], label: "coin",
+											 outputs: [{:assign, :o1, {:lit, "50"}}],
+											 sources: [%{event: 2, trace: 1}, %{event: 2, trace: 3},
+																 %{event: 2, trace: 5}], updates: []}],
+			{"15,3,5,9,11,17",
+			 "16,12,4,6,10,18"} => [%{guards: [], label: "vend",
+																outputs: [{:assign, :o1, {:v, :r1}}],
+																sources: [%{event: 3, trace: 2}, %{event: 3, trace: 4},
+																					%{event: 3, trace: 6}, %{event: 4, trace: 1}, %{event: 4, trace: 3},
+																					%{event: 4, trace: 5}], updates: []}],
+			{"2,8,14",
+			 "15,3,5,9,11,17"} => [%{guards: [{:eq, {:v, :i1}, {:lit, "50"}}],
+															 label: "coin", outputs: [{:assign, :o1, {:lit, "100"}}],
+															 sources: [%{event: 3, trace: 1}, %{event: 3, trace: 3},
+																				 %{event: 3, trace: 5}], updates: []}]}
+	end
+
+#	@tag timeout: 1200000
+#	test "Learn bigger vending machine" do
+#		traces = Athena.Tracefile.load_json_file("sample-traces/vend2.json")
+#		efsm = Athena.learn(Athena.make_trace_set(traces),1,1.5)
+#		#:io.format("FINAL EFSM:~n~p~n",[Athena.EFSM.to_dot(efsm)])
+#		assert efsm == biggerfinalefsm
+#	end
 
 	defp biggerfinalefsm do
-%{{"0",
+		%{{"0",
               "1,7,36,1,7,40"} => [%{guards: [], label: "select", outputs: [],
                 sources: [%{event: 1, trace: 1}, %{event: 1, trace: 2}, %{event: 1, trace: 3},
                  %{event: 1, trace: 4}, %{event: 1, trace: 5}, %{event: 1, trace: 6},

@@ -74,4 +74,12 @@
     ,{"label":"coin","inputs":["20"],"outputs":["100"]}
     ,{"label":"vend","inputs":[],"outputs":["beer"]}
 ]
+,[
+    {"label":"select","inputs":["beer"],"outputs":[]}
+    ,{"label":"coin","inputs":["20"],"outputs":["20"]}
+    ,{"label":"coin","inputs":["50"],"outputs":["70"]}
+    ,{"label":"coin","inputs":["20"],"outputs":["90"]}
+    ,{"label":"coin","inputs":["10"],"outputs":["100"]}
+    ,{"label":"vend","inputs":[],"outputs":["beer"]}
+]
 ]

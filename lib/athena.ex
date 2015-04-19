@@ -76,7 +76,9 @@ defmodule Athena do
 									
 									#FIXME GP improve guards?
 									
-									learn_step(newnewefsm,selector,skips,intraset,traceset,threshold)
+									# Clear the skips because something has changed...
+									:io.format("Now ~p states~n",[length(EFSM.get_states(newnewefsm))])
+									learn_step(newnewefsm,selector,[],intraset,traceset,threshold)
 								else
 									raise Athena.LearnException, message: "Failed check"
 								end

@@ -7,8 +7,11 @@ defmodule Athena.IntertraceMerge do
 			{efsmp,vname} = fix_first(efsm,inter,traceset)
 			efsmpp = fix_second(efsmp,inter,vname,traceset)
 			{s1,s2,{tn1,i1},{tn2,i2}} = inter
+			File.write("tidy" <> s1 <>".dot",EFSM.to_dot(efsmpp),[:write])
 			{efsmppp,m1} = EFSM.merge(s1,s1,efsmpp)
+			File.write("tidy" <> s2 <>".dot",EFSM.to_dot(efsmppp),[:write])
 			{newefsm,m2} = EFSM.merge(s2,s2,efsmppp)
+			File.write("after_tidy" <> s1 <> "and" <> s2 <>".dot",EFSM.to_dot(newefsm),[:write])
 			# Check we didn't break anything...
 			if EFSM.traces_ok?(newefsm,traceset) do
 				#:io.format("WORKED.~n")

@@ -284,6 +284,7 @@ defmodule Athena.EFSM do
 	end
 
 	def merge(s1,s2,efsm,ignore) do
+		#:io.format("Merging ~p and ~p~n",[s1,s2])
 		newname = if s1 == s2 do s1 else to_string(s1) <> "," <> to_string(s2) end
 		# Replace old elements of the transition matrix with the new state
 		{newefsm,alltrans} = List.foldl(Map.keys(efsm),
@@ -308,13 +309,24 @@ defmodule Athena.EFSM do
 												 fn({{d1,_l1},{d2,_l2}},{accefsm,accmerges}) ->
 														 case Enum.member?(accmerges,{d1,d2}) do
 															 false ->
-																 {nnefsm,submerges} = merge(d1,d2,accefsm,accmerges)
+																 {nnefsm,submerges} = merge(true_name(d1,accmerges),true_name(d2,accmerges),accefsm,accmerges)
 																 {nnefsm,accmerges ++ submerges}
 															 true ->
 																{accefsm,accmerges} 
 														 end
 												 end)
 		{merge_trans(detefsm,statemerges),Enum.filter(statemerges, fn(m) -> not Enum.any?(ignore, fn(i) -> i == m end) end)}
+	end
+
+	defp true_name(n,[]) do
+		n
+	end
+	defp true_name(n,[{l,r} | more]) do
+		if (n == l or n == r) and (l != r) do
+			true_name(l <> "," <> r,more)
+		else
+			true_name(n,more)
+		end
 	end
 
 	defp merge_trans(efsm,statemerges) do
@@ -434,6 +446,7 @@ defmodule Athena.EFSM do
 			end
 		rescue
 			_e in Athena.LearnException ->
+				#:io.format("Trace failed:~n~p~n~p~n",[t,Exception.message(_e)])
 				false
 		end
 	end
