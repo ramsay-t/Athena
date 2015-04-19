@@ -2,7 +2,7 @@ defmodule Athena.IntertraceMerge do
 	alias Athena.EFSM, as: EFSM
 
 	def one_inter(efsm, inter, traceset) do
-		:io.format("Applying ~p~n",[inter])
+		#:io.format("Applying ~p~n",[inter])
 		try do
 			{efsmp,vname} = fix_first(efsm,inter,traceset)
 			efsmpp = fix_second(efsmp,inter,vname,traceset)
@@ -11,14 +11,14 @@ defmodule Athena.IntertraceMerge do
 			{newefsm,m2} = EFSM.merge(s2,s2,efsmppp)
 			# Check we didn't break anything...
 			if EFSM.traces_ok?(newefsm,traceset) do
-				:io.format("WORKED.~n")
+				#:io.format("WORKED.~n")
 				newefsm
 			else
 				raise Athena.LearnException, message: "Failed check"
 			end
 			rescue
 				_e in Athena.LearnException ->
-				:io.format("FAILED.~n")
+				#:io.format("FAILED.~n")
 				nil
 		end
 	end

@@ -48,7 +48,7 @@ defmodule Athena do
 	end
 
 	defp learn_step(efsm,selector,skips,intraset,traceset,threshold) do
-		:io.format("Merging... - skipping ~p ~n",[skips])
+		#:io.format("Merging... - skipping ~p ~n",[skips])
 		case get_next_accepted_merge(selector.(efsm),skips) do
 			nil ->
 				efsm
@@ -63,12 +63,12 @@ defmodule Athena do
 							[] ->
 								raise Athena.LearnException, message: "No merges happened!"
 							_ ->
-								:io.format("Merges: ~p~n",[merges])
+								#:io.format("Merges: ~p~n",[merges])
 								File.write("current_efsm.dot",EFSM.to_dot(newefsm),[:write])
 								if EFSM.traces_ok?(newefsm,traceset) do
 
 									interesting = Athena.EFSMServer.get_interesting_traces(Enum.map(merges,fn({x,y}) -> x <> "," <> y end),newefsm)
-									:io.format("Interesting traces:~n~p~n",[interesting])
+									#:io.format("Interesting traces:~n~p~n",[interesting])
 									
 									newnewefsm = apply_inters(newefsm,intraset,traceset,interesting) 
 									
@@ -83,7 +83,7 @@ defmodule Athena do
 						end
 						rescue
 							_e in Athena.LearnException ->
-							:io.format("That merge failed...~n")
+							#:io.format("That merge failed...~n")
 							IO.puts Exception.message(_e)
 							File.write("current_efsm.dot",EFSM.to_dot(efsm),[:write])
 							# Made something invalid somewhere...
@@ -98,7 +98,7 @@ defmodule Athena do
 			[] ->
 				efsm
 			inters ->
-				:io.format("Inters: ~n~p~n",[inters])
+				#:io.format("Inters: ~n~p~n",[inters])
 				possible = :skel.do([{:pool,
 													[fn(i) -> InterMerge.one_inter(efsm,i,traceset)  end],
 													{:max,length(inters)}
@@ -109,17 +109,17 @@ defmodule Athena do
 						efsm
 					pscores ->
 						{_score,best} = hd(pscores)
-						:io.format("Best: ~p~n~p~n",[_score,best])
+						#:io.format("Best: ~p~n~p~n",[_score,best])
 						if best == efsm do
 							# No improvement?
-							:io.format("Did nothing - whut?~n")
+							#:io.format("Did nothing - whut?~n")
 							efsm
 						else
 							try do
 								apply_inters(best,intraset,traceset,interesting)
 								rescue
 									_e in Athena.LearnException ->
-									:io.format("That merge failed...~n~p~n",[Exception.message(_e)])
+									#:io.format("That merge failed...~n~p~n",[Exception.message(_e)])
 									File.write("current_efsm.dot",EFSM.to_dot(best),[:write])
 									best
 							end

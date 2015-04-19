@@ -51,17 +51,17 @@ defmodule Athena.AthenaTest do
 													:outputs => [{:assign,:o1,{:lit,"50"}}],
 													:sources => [%{:event => 2,:trace => 1},%{:event => 2,:trace => 3}],
 													:updates => []}],
-			{"1,7","3,9,5"} => [%{:guards => [{:eq,{:v,:i1},{:lit,"100"}}],
+			{"1,7","3,5,9"} => [%{:guards => [{:eq,{:v,:i1},{:lit,"100"}}],
 														:label => "coin",
 														:outputs => [{:assign,:o1,{:lit,"100"}}],
 														:sources => [%{:event => 2,:trace => 2}],
 														:updates => []}],
-			{"2,8","3,9,5"} => [%{:guards => [{:eq,{:v,:i1},{:lit,"50"}}],
+			{"2,8","3,5,9"} => [%{:guards => [{:eq,{:v,:i1},{:lit,"50"}}],
 														:label => "coin",
 														:outputs => [{:assign,:o1,{:lit,"100"}}],
 														:sources => [%{:event => 3,:trace => 1},%{:event => 3,:trace => 3}],
 														:updates => []}],
-			{"3,9,5","10,4,6"} => [%{:guards => [],
+			{"3,5,9","4,6,10"} => [%{:guards => [],
 															 :label => "vend",
 															 :outputs => [{:assign,:o1,{:v,:r1}}],
 															 :sources => [%{:event => 3,:trace => 2},%{:event => 4,:trace => 1},%{:event => 4,:trace => 3}],
@@ -69,19 +69,18 @@ defmodule Athena.AthenaTest do
 	end
 
   test "Learn simple vending machine" do
-		justtraces = Enum.map(ts1, fn({_,t}) -> t end)
-		efsm = Athena.learn(justtraces,4,1.5)
+		efsm = Athena.learn(ts1,4,1.5)
 		#:io.format("FINAL EFSM:~n~p~n",[Athena.EFSM.to_dot(efsm)])
 		assert efsm == finalefsm
   end
 
-	@tag timeout: 1200000
-	test "Learn bigger vending machine" do
-		traces = Athena.Tracefile.load_json_file("sample-traces/vend2.json")
-		efsm = Athena.learn(traces,1,1.5)
+	#@tag timeout: 1200000
+	#test "Learn bigger vending machine" do
+		#traces = Athena.Tracefile.load_json_file("sample-traces/vend2.json")
+		#efsm = Athena.learn(Athena.make_trace_set(traces),1,1.5)
 		#:io.format("FINAL EFSM:~n~p~n",[Athena.EFSM.to_dot(efsm)])
-		assert efsm == biggerfinalefsm
-	end
+		#assert efsm == biggerfinalefsm
+	#end
 
 	defp biggerfinalefsm do
 %{{"0",
