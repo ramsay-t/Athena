@@ -5,7 +5,19 @@ defmodule Athena.KTailsTest do
 	alias Athena.AthenaTest, as: AthenaTest
 	alias Athena.EFSM, as: EFSM
 
+	setup_all do
+		IO.puts "Setting up..."
+		:net_adm.world()
+		peasant = :sk_peasant.start()
+		on_exit(fn() ->
+								send peasant, :terminate
+						end)
+	end
+
+	
+
   test "Get tails" do
+
     assert KTails.get_tails(EFSMTest.efsm1, 1) == 
 										%{"0" => [{["1"],
 															 [%{guards: [{:eq, {:v, :i1}, {:lit, "coke"}}], label: "select",

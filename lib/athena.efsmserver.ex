@@ -134,10 +134,10 @@ defmodule Athena.EFSMServer do
 		end
 	end
 
-	defp traces_ok?(_efsm,[]) do
+	def traces_ok?(_efsm,[]) do
 		true
 	end
-	defp traces_ok?(efsm,[{_,t} | more]) do
+	def traces_ok?(efsm,[{_,t} | more]) do
 		try do
 			EFSM.walk(t,efsm)
 			traces_ok?(efsm,more)
@@ -211,7 +211,7 @@ defmodule Athena.EFSMServer do
 																						 :compfun => &Athena.KTails.compare_all(&1,&2)})
 	end
 
-	defp get_interesting_traces(interesting_states,efsm) do
+	def get_interesting_traces(interesting_states,efsm) do
 		list = Enum.map(Map.keys(efsm),
 														 fn({from,to}) ->	
 																 if Enum.any?(interesting_states, fn(interest) -> interest == from or interest == to end) do

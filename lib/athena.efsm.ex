@@ -408,4 +408,44 @@ defmodule Athena.EFSM do
 		nil
 	end
 
+
+	def add_trans(efsm,from,to,tran) do
+		case efsm[{from,to}] do
+			nil ->
+				Map.put(efsm,{from,to},[tran])
+			ctrans ->
+				Map.put(efsm,{from,to},[tran | ctrans])
+		end
+	end
+
+	def traces_ok?(efsm,[{_,t} | traceset]) do
+		traces_ok?(efsm,[t | Enum.map(traceset,fn({_,t}) -> t end)])
+	end
+	def traces_ok?(efsm, []) do
+		true
+	end
+	def traces_ok?(efsm, [t | more]) do
+		try do
+			case walk(t,efsm) do
+				{:ok,{_,_},_,_} ->
+					traces_ok?(efsm,more)
+				res ->
+						raise Athena.LearnException, message: "Trace failed: " <> to_string(:io_lib.format("~p",[res]))
+			end
+		rescue
+			_e in Athena.LearnException ->
+				false
+		end
+	end
+
+	@doc """
+  Gives a simple, numeric measure of complexity for the EFSM.
+
+  Bigger numbers are more complex, smaller numbers are simpler. 
+  """
+	def complexity(efsm) do
+		# Currently just the number of states plus the number of transitions
+		length(get_states(efsm)) + Enum.sum(Enum.map(Map.keys(efsm), fn(k) -> length(efsm[k]) end))
+	end
+
 end

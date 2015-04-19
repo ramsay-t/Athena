@@ -41,20 +41,22 @@ defmodule Athena.KTails do
 
 	def compare_all(efsm,tails) do
 		states = EFSM.get_states(efsm)
-		map = Enum.concat(Enum.map(List.zip([:lists.seq(0,length(states)),states]), 
-									 fn({idx,n}) ->
-											 :io.format("~p [~p]...",[idx,n])
-											 # We only need the triangle matrix
-											 {_,later} = Enum.split(states,idx+1)
-											 Enum.map(later,fn(m) -> {{n,m},compare(n,m,tails)} end)
-									 end
-							))
-		:io.format("~n")
+		map = Enum.concat(
+											:skel.do([{:pool,
+																[fn({idx,n}) ->
+																		 # We only need the triangle matrix
+																		 {_,later} = Enum.split(states,idx+1)
+																		 Enum.map(later,fn(m) -> {compare(n,m,tails),{n,m}} end)
+																 end],
+																{:max,length(states)}
+															 }],
+															 List.zip([:lists.seq(0,length(states)),states])
+															)
+								 )
 		:lists.usort(map)
 	end
 
 	def compare(n,m,tails) do
-		#:io.format("~p vs ~p~n~p~n~p~n",[n,m,tails[n],tails[m]])
 		List.foldl(tails[n],
 							 0,
 							 fn({_,t},acc) ->
@@ -114,9 +116,7 @@ defmodule Athena.KTails do
   """
 	@spec selector(integer,Athena.EFSM.t) :: list({float,{String.t,String.t}})
 	def selector(k,efsm) do
-		vmap = compare_all(efsm,k)
-		scoreset = Enum.map(Map.keys(vmap), fn({a,b}) -> {vmap[{a,b}],{a,b}} end)
-		#:io.format("EFSM:~n~p~nScores:~n~p~n~n",[Athena.EFSM.to_dot(efsm),scoreset])
-		Enum.reverse(Enum.sort(scoreset))
+		vlist = compare_all(efsm,get_tails(efsm,k))
+		Enum.reverse(Enum.sort(vlist))
 	end
 end
