@@ -18,11 +18,13 @@ defmodule Athena do
 		# Various things use Skel pools, so we must conenct to the cluster and
 		# start at least one worker.
 		:net_adm.world()
+		:sk_work_master.find()
 		peasant = :sk_peasant.start()
 
 		:io.format("Loading ~p traces...~n",[length(traceset)])
 
 		pta = EFSM.build_pta(traceset)
+		:io.format("Finding intra-trace dependencies...~n")
 		intraset = Athena.Intratrace.get_intra_set(traceset)
 		:io.format("Intraset: ~n~p~n",[intraset])
 
@@ -63,12 +65,12 @@ defmodule Athena do
 							[] ->
 								raise Athena.LearnException, message: "No merges happened!"
 							_ ->
-								#:io.format("Merges: ~p~n",[merges])
+								:io.format("Merges: ~p~n",[merges])
 								File.write("current_efsm.dot",EFSM.to_dot(newefsm),[:write])
 								if EFSM.traces_ok?(newefsm,traceset) do
 
 									interesting = Athena.EFSMServer.get_interesting_traces(Enum.map(merges,fn({x,y}) -> x <> "," <> y end),newefsm)
-									#:io.format("Interesting traces:~n~p~n",[interesting])
+									:io.format("Interesting traces:~n~p~n",[interesting])
 									
 									newnewefsm = apply_inters(newefsm,intraset,traceset,interesting) 
 									
@@ -100,7 +102,7 @@ defmodule Athena do
 			[] ->
 				efsm
 			inters ->
-				#:io.format("Inters: ~n~p~n",[inters])
+				:io.format("Inters: ~n~p~n",[inters])
 				possible = :skel.do([{:pool,
 													[fn(i) -> InterMerge.one_inter(efsm,i,traceset)  end],
 													{:max,length(inters)}
@@ -111,7 +113,7 @@ defmodule Athena do
 						efsm
 					pscores ->
 						{_score,best} = hd(pscores)
-						#:io.format("Best: ~p~n~p~n",[_score,best])
+						:io.format("Best: ~p~n~p~n",[_score,best])
 						if best == efsm do
 							# No improvement?
 							#:io.format("Did nothing - whut?~n")
@@ -121,7 +123,7 @@ defmodule Athena do
 								apply_inters(best,intraset,traceset,interesting)
 								rescue
 									_e in Athena.LearnException ->
-									#:io.format("That merge failed...~n~p~n",[Exception.message(_e)])
+									:io.format("That merge failed...~n~p~n",[Exception.message(_e)])
 									File.write("current_efsm.dot",EFSM.to_dot(best),[:write])
 									best
 							end

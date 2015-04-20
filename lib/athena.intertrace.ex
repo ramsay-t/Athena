@@ -20,21 +20,35 @@ defmodule Athena.Intertrace do
 	#@spec get_inters(Athena.EFSM.t,Athena.traceset,%{integer => Athena.Intratrace.t}) :: list(t)
 	def get_inters(efsm,traceset,intras,interesting_traces) do
 		# Get sets of intras for which the start states match something interesting
-		firsts = Enum.map(Map.keys(efsm),
-								 fn({from,to}) ->
-										 {from,find_firsts(efsm[{from,to}],intras,interesting_traces)}
-								 end
-						)
-		List.foldl(firsts,
-							 [],
-							 fn({fst,intras},acc) ->
-									 case check_snds(efsm,traceset,intras) do
-										 [] ->
-											 acc
-										 matches ->
-											 acc ++ Enum.map(matches, fn({snd,i1,i2}) -> {fst,snd,i1,i2} end)
-									 end
-							 end)
+#		firsts = Enum.map(Map.keys(efsm),
+#								 fn({from,to}) ->
+#										 {from,find_firsts(efsm[{from,to}],intras,interesting_traces)}
+#								 end
+#						)
+		keys = Map.keys(efsm)
+		firsts = :skel.do([{:pool,
+												[fn({from,to}) -> {from,find_firsts(efsm[{from,to}],intras,interesting_traces)} end],
+												{:max,length(keys)}}],
+											keys)
+
+#		List.foldl(firsts,
+#							 [],
+#							 fn({fst,intras},acc) ->
+#									 case check_snds(efsm,traceset,intras) do
+#										 [] ->
+#											 acc
+#										 matches ->
+#											 acc ++ Enum.map(matches, fn({snd,i1,i2}) -> {fst,snd,i1,i2} end)
+#									 end
+#							 end)
+     Enum.concat(:skel.do([{:pool,
+														[fn({fst,intras}) -> 
+																 matches = check_snds(efsm,traceset,intras)
+																 Enum.map(matches, fn({snd,i1,i2}) -> {fst,snd,i1,i2} end)
+														 end],
+														{:max,length(firsts)}}],
+													firsts))
+		
 	end
 
 	def get_inters(pid,interesting) do

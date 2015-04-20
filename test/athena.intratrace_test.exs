@@ -3,6 +3,15 @@ defmodule Athena.IntratraceTest do
 	alias Athena.Intratrace, as: Intratrace
 	alias Athena.Tracefile, as: Tracefile
 
+	setup_all do
+		IO.puts "Setting up..."
+		:net_adm.world()
+		peasant = :sk_peasant.start()
+		on_exit(fn() ->
+								send peasant, :terminate
+						end)
+	end
+
 	defp e1() do
 		%{:label => "select",:inputs => ["coke"], :outputs => ["done"]}
 	end

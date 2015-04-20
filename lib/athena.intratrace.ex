@@ -18,11 +18,11 @@ defmodule Athena.Intratrace do
 	end
 	defp get_intras_from_enumerated({n1,e1}, others,matches) do
 		res = Enum.concat(Enum.map(others, fn({n2,e2}) ->
-															 matches = get_intras_from_pair(e1,e2)
-															 Enum.map(matches, fn ({{io1,p1},{io2,p2},content}) ->
-																											%{:fst => {n1,io1,p1}, :snd => {n2,io2,p2}, :content => content}
-																								 end)
-													 end))
+																					 matches = get_intras_from_pair(e1,e2)
+																					 Enum.map(matches, fn ({{io1,p1},{io2,p2},content}) ->
+																																	%{:fst => {n1,io1,p1}, :snd => {n2,io2,p2}, :content => content}
+																														 end)
+																			 end))
 		get_intras_from_enumerated(hd(others),tl(others),res ++ matches)
 	end
 
@@ -39,11 +39,14 @@ defmodule Athena.Intratrace do
 
 	@spec get_intra_set(Athena.traceset) :: %{integer => list(t)}
 	def get_intra_set(traceset) do
-		enintras = Enum.map(traceset,
-											 fn({n,t}) ->
-													 {n,get_intras(t)}
-											 end
-											)
+		enintras = :skel.do([{:pool,
+												 [fn({n,t}) ->
+															:io.format("Getting Intras for trace ~p~n",[n])
+															{n,get_intras(t)}
+													end],
+												 {:max,length(traceset)}}],
+												traceset
+											 )
 		make_intra_set(enintras,%{})
 	end
 

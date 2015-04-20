@@ -7,7 +7,7 @@ defmodule Athena.NetTrace do
 	def load_tshark_file(filename) do
 		{:ok,raw} = File.read(filename)
 		traces = parse_tshark(raw)
-		pta = Athena.EFSM.build_pta(traces)
+#		pta = Athena.EFSM.build_pta(traces)
 	end
 
 	def parse_tshark(string,data? \\ false) do

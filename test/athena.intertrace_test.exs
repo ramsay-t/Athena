@@ -3,6 +3,15 @@ defmodule Athena.IntertraceTest do
 	alias Athena.Intertrace, as: Inter
 	alias Athena.EFSM, as: EFSM
 
+	setup_all do
+		IO.puts "Setting up..."
+		:net_adm.world()
+		peasant = :sk_peasant.start()
+		on_exit(fn() ->
+								send peasant, :terminate
+						end)
+	end
+
 	test "No inters on the PTA" do
 		efsm = Athena.EFSM.build_pta(Athena.EFSMTest.ts1)
 		intras = Athena.Intratrace.get_intra_set(Athena.EFSMTest.ts1)
