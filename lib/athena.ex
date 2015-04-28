@@ -18,12 +18,14 @@ defmodule Athena do
 		# Various things use Skel pools, so we must conenct to the cluster and
 		# start at least one worker.
 		:net_adm.world()
+		:timer.sleep(1000)
 		:sk_work_master.find()
-		peasant = :sk_peasant.start()
+		peasants = Enum.map(:lists.seq(1,10), fn(_) -> :sk_peasant.start() end)
 
 		:io.format("Loading ~p traces...~n",[length(traceset)])
 
-		pta = EFSM.build_pta(traceset)
+		# The initial PTA is now just one trace. This 
+		pta = EFSM.build_pta([hd(traceset)])
 		:io.format("Finding intra-trace dependencies...~n")
 		intraset = Athena.Intratrace.get_intra_set(traceset)
 		:io.format("Intraset: ~n~p~n",[intraset])
@@ -33,9 +35,30 @@ defmodule Athena do
 		File.write("current_efsm.dot",EFSM.to_dot(pta),[:write])
 		:io.format("Learning... [~p states]~n",[length(EFSM.get_states(pta))])
 
-		efsm = learn_step(pta,&Athena.KTails.selector(k,&1),[],intraset,traceset,threshold)
-		send(peasant, :terminate)
+		efsm = iterative(1,traceset,intraset,pta,k,threshold)
+
+		#efsm = learn_step(pta,&Athena.KTails.selector(k,&1),[],intraset,traceset,threshold)
+		Enum.map(peasants, fn(p) -> send(p, :terminate) end)
 		efsm
+	end
+
+	defp iterative(idx,traceset,intraset,efsm,k,threshold) do
+		if idx > length(traceset) do
+			efsm
+		else
+			t = get_trace(traceset,idx)
+			:io.format("Adding ~p~n",[t])
+
+			{efsmp,_} = EFSM.add_traces([{idx,t}],efsm)
+
+			{tracesetsubset,_} = Enum.split(traceset,idx+1)
+
+			newefsm = learn_step(efsmp,&Athena.KTails.selector(k,&1),[],intraset,tracesetsubset,threshold)
+
+			:io.format("Stabalized with ~p states.~n",[length(EFSM.get_states(newefsm))])
+
+			iterative(idx+1,traceset,intraset,newefsm,k,threshold)
+		end
 	end
 
 	defp get_next_accepted_merge([],_skips) do
@@ -70,7 +93,7 @@ defmodule Athena do
 								if EFSM.traces_ok?(newefsm,traceset) do
 
 									interesting = Athena.EFSMServer.get_interesting_traces(Enum.map(merges,fn({x,y}) -> x <> "," <> y end),newefsm)
-									:io.format("Interesting traces:~n~p~n",[interesting])
+									#:io.format("Interesting traces:~n~p~n",[interesting])
 									
 									newnewefsm = apply_inters(newefsm,intraset,traceset,interesting) 
 									
@@ -79,7 +102,7 @@ defmodule Athena do
 									#FIXME GP improve guards?
 									
 									# Clear the skips because something has changed...
-									:io.format("Now ~p states~n",[length(EFSM.get_states(newnewefsm))])
+									#:io.format("Now ~p states~n",[length(EFSM.get_states(newnewefsm))])
 									learn_step(newnewefsm,selector,[],intraset,traceset,threshold)
 								else
 									raise Athena.LearnException, message: "Failed check"
@@ -88,7 +111,7 @@ defmodule Athena do
 						rescue
 							_e in Athena.LearnException ->
 							#:io.format("That merge failed...~n")
-							IO.puts Exception.message(_e)
+							#IO.puts Exception.message(_e)
 							File.write("current_efsm.dot",EFSM.to_dot(efsm),[:write])
 							# Made something invalid somewhere...
 							learn_step(efsm,selector,[{s1,s2}|skips],intraset,traceset,threshold)
@@ -102,7 +125,7 @@ defmodule Athena do
 			[] ->
 				efsm
 			inters ->
-				:io.format("Inters: ~n~p~n",[inters])
+				#:io.format("Inters: ~n~p~n",[inters])
 				possible = :skel.do([{:pool,
 													[fn(i) -> InterMerge.one_inter(efsm,i,traceset)  end],
 													{:max,length(inters)}
@@ -113,7 +136,7 @@ defmodule Athena do
 						efsm
 					pscores ->
 						{_score,best} = hd(pscores)
-						:io.format("Best: ~p~n~p~n",[_score,best])
+						#:io.format("Best: ~p~n~p~n",[_score,best])
 						if best == efsm do
 							# No improvement?
 							#:io.format("Did nothing - whut?~n")
@@ -123,7 +146,7 @@ defmodule Athena do
 								apply_inters(best,intraset,traceset,interesting)
 								rescue
 									_e in Athena.LearnException ->
-									:io.format("That merge failed...~n~p~n",[Exception.message(_e)])
+									#:io.format("That merge failed...~n~p~n",[Exception.message(_e)])
 									File.write("current_efsm.dot",EFSM.to_dot(best),[:write])
 									best
 							end

@@ -93,23 +93,29 @@ defmodule Athena.Intertrace do
 							 List.foldl(intras,
 													[],
 													fn({tn2,i2},acc) ->
-															# Check end states match
-															slice2 = Enum.slice(Athena.get_trace(traceset,tn2),0,elem(i2[:snd],0)-1)
-															case Athena.EFSM.walk(slice2,{start,%{}},efsm) do
-																{:ok,{es2,_},_,_} -> 
-																	if es1 == es2 do
-																		# Check I/O directions match
-																		if elem(intra[:fst],1) == elem(i2[:fst],1)
-																		and elem(intra[:snd],1) == elem(i2[:snd],1) do
-																			[ {es1,{tn,intra},{tn2,i2}} | acc]
+															# Exclude matches from the same trace, which can occur in loops etc.
+															# We want confirmation from multiple traces
+															if tn2 != tn do
+																# Check end states match
+																slice2 = Enum.slice(Athena.get_trace(traceset,tn2),0,elem(i2[:snd],0)-1)
+																case Athena.EFSM.walk(slice2,{start,%{}},efsm) do
+																	{:ok,{es2,_},_,_} -> 
+																		if es1 == es2 do
+																			# Check I/O directions match
+																			if elem(intra[:fst],1) == elem(i2[:fst],1)
+																			and elem(intra[:snd],1) == elem(i2[:snd],1) do
+																				[ {es1,{tn,intra},{tn2,i2}} | acc]
+																			else
+																				acc
+																			end
 																		else
 																			acc
 																		end
-																	else
-																		acc
-																	end
-																res ->
-																	raise Athena.LearnException, message: "Invalid trace in the EFSM?? " <> to_string(:io_lib.format("~p <<~p>>",[slice2,res]))
+																	res ->
+																		raise Athena.LearnException, message: "Invalid trace in the EFSM?? " <> to_string(:io_lib.format("~p <<~p>>",[slice2,res]))
+																end
+															else
+																acc
 															end
 													end)
 						 res ->

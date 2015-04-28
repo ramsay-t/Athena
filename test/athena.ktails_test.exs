@@ -6,7 +6,6 @@ defmodule Athena.KTailsTest do
 	alias Athena.EFSM, as: EFSM
 
 	setup_all do
-		IO.puts "Setting up..."
 		:net_adm.world()
 		peasant = :sk_peasant.start()
 		on_exit(fn() ->
