@@ -30,8 +30,8 @@ defmodule Athena.Mixfile do
   # Type `mix help deps` for more examples and options
   defp deps do
     [{:epagoge, git: "https://github.com/ramsay-t/epagoge"},
+		 {:skel, git: "https://github.com/ramsay-t/skel", override: true},
 		 {:json, git: "https://github.com/cblage/elixir-json/"},
-		 {:skel, git: "https://github.com/ramsay-t/skel"},
 		 {:coverex, "~> 1.0.0", only: :test},
 		 {:earmark, "~> 0.1", only: :dev},
 		 {:ex_doc, "~> 0.6", only: :dev}]
