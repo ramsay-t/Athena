@@ -209,10 +209,10 @@ defmodule Athena.AthenaTest do
 
 	@tag timeout: 1200000
 	test "Learn frequency server" do
-		#traces = Athena.Tracefile.load_json_file("sample-traces/freq.json")
-		#efsm = Athena.learn(traces,&Athena.KTails.selector(6,&1),1)
-		#:io.format("FINAL EFSM:~n~p~n",[Athena.EFSM.to_dot(efsm)])
-		#assert efsm == freqefsm
+		traces = Athena.Tracefile.load_json_file("sample-traces/freq.json")
+		efsm = Athena.learn(Athena.make_trace_set(traces),2,1)
+		:io.format("FINAL EFSM:~n~p~n",[Athena.EFSM.to_dot(efsm)])
+		assert efsm == freqefsm
 	end
 
 	defp freqefsm do

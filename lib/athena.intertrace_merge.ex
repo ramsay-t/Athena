@@ -2,7 +2,6 @@ defmodule Athena.IntertraceMerge do
 	alias Athena.EFSM, as: EFSM
 
 	def one_inter(efsm, inter, traceset) do
-		#:io.format("Applying ~p~n",[inter])
 		try do
 			{efsmp,vname} = fix_first(efsm,inter,traceset)
 			efsmpp = fix_second(efsmp,inter,vname,traceset)
@@ -14,14 +13,14 @@ defmodule Athena.IntertraceMerge do
 			#File.write("after_tidy" <> s1 <> "and" <> s2 <>".dot",EFSM.to_dot(newefsm),[:write])
 			# Check we didn't break anything...
 			if EFSM.traces_ok?(newefsm,traceset) do
-				#:io.format("WORKED.~n")
+				:io.format("WORKED! Applying ~p~n",[inter])
 				newefsm
 			else
+				:io.format("FAILED Applying ~p~n~p~n",[inter,EFSM.to_dot(newefsm)])
 				raise Athena.LearnException, message: "Failed check"
 			end
 			rescue
 				_e in Athena.LearnException ->
-				#:io.format("FAILED.~n")
 				nil
 		end
 	end
@@ -29,7 +28,6 @@ defmodule Athena.IntertraceMerge do
 	defp fix_first(efsm,{s1,_,{tn1,i1},{tn2,i2}},traceset) do
 		{e1n,io,idx} = i1[:fst]
 		{e2n,io,idx} = i2[:fst]
-#FIXME part modified
 		transet = get_trans_set(efsm,s1)
 		{from1,to1,tran1} = get_trans_tuple(transet,tn1,e1n)
 		{from2,to2,tran2} = get_trans_tuple(transet,tn2,e2n)
@@ -79,15 +77,19 @@ defmodule Athena.IntertraceMerge do
 									newupdates2 = Epagoge.ILP.simplify([up | tran2[:updates]])
 									{newupdates1,newupdates2}
 							end
-						case make_assign_if_needed(ioname,pre,suf,rname,tran1[:outputs]++tran2[:outputs]) do
-							nil ->
-								# No change needed - the change is already subsumed by something
-								newops1 = tran1[:outputs]
-								newops2 = tran2[:outputs]
-							no ->
-								newops1 = Epagoge.ILP.simplify([no | tran1[:outputs]])
-								newops2 = Epagoge.ILP.simplify([no | tran2[:outputs]])
-						end
+
+						# I'm not sure it ever makes sense to modify the output of the first element?
+						#case make_assign_if_needed(ioname,pre,suf,rname,tran1[:outputs]++tran2[:outputs]) do
+						#	nil ->
+						#		# No change needed - the change is already subsumed by something
+						#		newops1 = tran1[:outputs]
+						#		newops2 = tran2[:outputs]
+						#	no ->
+						#		newops1 = Epagoge.ILP.simplify([no | tran1[:outputs]])
+						#		newops2 = Epagoge.ILP.simplify([no | tran2[:outputs]])
+						#end
+						newops1 = tran1[:outputs]
+						newops2 = tran2[:outputs]
 
 						newtrans1 = Map.put(Map.put(tran1,:updates,newupdates1),:outputs,newops1)
 						newtrans2 = Map.put(Map.put(tran2,:updates,newupdates2),:outputs,newops2)

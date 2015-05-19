@@ -41,7 +41,6 @@ defmodule Athena.Intratrace do
 	def get_intra_set(traceset) do
 		enintras = :skel.do([{:pool,
 												 [fn({n,t}) ->
-															:io.format("Getting Intras for trace ~p~n",[n])
 															{n,get_intras(t)}
 													end],
 												 {:max,length(traceset)}}],

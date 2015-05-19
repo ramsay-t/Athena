@@ -1,0 +1,28 @@
+[
+[
+{"label":"start", "inputs":[], "outputs":["true"]}
+{"label":"allocate", "inputs":[], "outputs":["{ok,10}"]}
+]
+,[
+{"label":"start", "inputs":[], "outputs":["true"]}
+{"label":"allocate", "inputs":[], "outputs":["{ok,10}"]}
+{"label":"allocate", "inputs":[], "outputs":["{ok,11}"]}
+]
+,[
+{"label":"start", "inputs":[], "outputs":["true"]}
+{"label":"allocate", "inputs":[], "outputs":["{ok,10}"]}
+{"label":"allocate", "inputs":[], "outputs":["{ok,11}"]}
+{"label":"allocate", "inputs":[], "outputs":["{ok,12}"]}
+{"label":"stop", "inputs":[], "outputs":["true"]}
+{"label":"start", "inputs":[], "outputs":["true"]}
+{"label":"allocate", "inputs":[], "outputs":["{ok,10}"]}
+{"label":"allocate", "inputs":[], "outputs":["{ok,11}"]}
+{"label":"allocate", "inputs":[], "outputs":["{ok,12}"]}
+]
+,[
+{"label":"start", "inputs":[], "outputs":["true"]}
+{"label":"allocate", "inputs":[], "outputs":["{ok,10}"]}
+{"label":"allocate", "inputs":[], "outputs":["{ok,11}"]}
+{"label":"allocate", "inputs":[], "outputs":["{ok,12}"]}
+]
+]

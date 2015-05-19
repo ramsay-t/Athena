@@ -49,7 +49,7 @@ defmodule Athena.EFSM do
 					{newefsm,newhits} =extend(length(prefix),suffix,tn,state,add_source(path,prefix,tn,efsm)) 
 					add_traces_step(ts,newefsm,start,hits++[state|newhits])
 				{:nondeterministic,{start,bind},e,path,pos} ->
-					raise Athena.LearnException, message: :io_lib.format("Non-deterministic choice between ~p at ~p~n~p~n~p~n",[pos,{start,bind},e,path])
+					raise Athena.LearnException, message: to_string(:io_lib.format("Non-deterministic choice between ~p at ~p~n~p~n~p~n",[pos,{start,bind},e,path]))
 			end
 		end
 	end
@@ -60,7 +60,7 @@ defmodule Athena.EFSM do
 	defp add_source_step([],_,_,efsm) do
 		efsm
 	end
-	defp add_source_step([{{s1,s2},n,e} | ts],tn,{_state,bind},efsm) do
+	defp add_source_step([{{s1,s2,_tran},n,e} | ts],tn,{_state,bind},efsm) do
 		ips = bind_entries(e[:inputs],"i")
 		{newtransrev,nextstate} = List.foldl(efsm[{s1,s2}],
 																			{[],nil},
@@ -98,6 +98,9 @@ defmodule Athena.EFSM do
   """
 	@spec to_dot(t) :: String.t
 	def to_dot(efsm) do
+		to_dot(efsm,"")
+	end
+	def to_dot(efsm,prefix) do
 		content = List.foldl(Map.keys(efsm),
 														 "",
 														 fn({from,to},acc) -> 
@@ -105,7 +108,7 @@ defmodule Athena.EFSM do
 																 tdot = trans_to_dot(from,to,trans)
 																 acc <> tdot
 														 end)
-		"digraph EFSM {\n" <> content <> "}\n"
+		"digraph EFSM {\n" <> prefix <> content <> "}\n"
 	end
 	
 	defp trans_to_dot(_,_,[]) do
@@ -188,10 +191,10 @@ defmodule Athena.EFSM do
   final bindings, the sequence of output bindings, and a 'path' through the machine.
   """
 	@spec walk(Athena.trace,{String.t,bindings},t) :: 
-		{:ok,{String.t,bindings},list(bindings),list({String.t,String.t})} 
-	| {:failed_after,String.t,{String.t,bindings},list({String.t,String.t})}
-	| {:output_missmatch,String.t,{String.t,bindings},%{:event => Athena.event, :observed => list(%{Epagoge.Exp.varname_t => String.t})},list({String.t,String.t})}
-	| {:nondeterministic,{String.t,bindings},Athena.event,list({String.t,String.t}),list(String.t)}
+		{:ok,{String.t,bindings},list(bindings),list({String.t,String.t,Label.t})} 
+	| {:failed_after,String.t,{String.t,bindings},list({String.t,String.t,Label.t})}
+	| {:output_missmatch,String.t,{String.t,bindings},%{:event => Athena.event, :observed => list(%{Epagoge.Exp.varname_t => String.t})},list({String.t,String.t,Label.t})}
+	| {:nondeterministic,{String.t,bindings},Athena.event,list({String.t,String.t,Label.t}),list(String.t)}
 	def walk(trace,{state,bindings},efsm) do
 		walk_step(trace,[],[],{state,bindings},[],efsm)
 	end
@@ -233,7 +236,7 @@ defmodule Athena.EFSM do
 														 )
 				bindos = bind_entries(e[:outputs],"o")
 				if osstring == bindos do
-					walk_step(ts,outputs ++ [osstring],previous ++ [e],{to,newbind},path ++ [{start,to}],efsm)
+					walk_step(ts,outputs ++ [osstring],previous ++ [e],{to,newbind},path ++ [{start,to,tran}],efsm)
 				else
 					{:output_missmatch,previous,{start,bind},%{:event => e, :observed => osstring},path}
 				end
@@ -260,7 +263,7 @@ defmodule Athena.EFSM do
 		extend_step(ts,tracenum,newstate,Map.put(efsm,{state,newstate},[Map.put(Label.event_to_label(e),:sources,[%{trace: tracenum, event: n}])]),hits ++ [newstate])
 	end
 
-	defp bind_entries(ips,prefix) do
+	def bind_entries(ips,prefix) do
 		List.foldl(List.zip([:lists.seq(1,length(ips)),ips]),
 													 %{},
 													 fn({n,i},acc) ->
@@ -433,7 +436,7 @@ defmodule Athena.EFSM do
 	def traces_ok?(efsm,[{_,t} | traceset]) do
 		traces_ok?(efsm,[t | Enum.map(traceset,fn({_,t}) -> t end)])
 	end
-	def traces_ok?(efsm, []) do
+	def traces_ok?(_efsm, []) do
 		true
 	end
 	def traces_ok?(efsm, [t | more]) do
@@ -451,6 +454,21 @@ defmodule Athena.EFSM do
 		end
 	end
 
+	def check_traces(efsm,[{_,t} | traceset]) do
+		check_traces(efsm,[t | Enum.map(traceset,fn({_,t}) -> t end)])
+	end
+	def check_traces(efsm,[]) do
+		:ok
+	end
+	def check_traces(efsm,[t | more]) do
+		case walk(t,efsm) do
+			{:ok,{_,_},_,_} ->
+				check_traces(efsm,more)
+			res ->
+				res
+		end
+	end
+
 	@doc """
   Gives a simple, numeric measure of complexity for the EFSM.
 
@@ -461,4 +479,66 @@ defmodule Athena.EFSM do
 		length(get_states(efsm)) + Enum.sum(Enum.map(Map.keys(efsm), fn(k) -> length(efsm[k]) end))
 	end
 
+	def remove_traces(efsm,tracenumbers) do
+		:io.format("Removing ~p~n",[tracenumbers])
+		List.foldl(Map.keys(efsm),
+							 %{},
+							 fn(k,accefsm) ->
+									 newtrans = List.foldl(efsm[k],
+																				 [],
+																				 fn(t,acc) ->
+																						 :io.format("Filtering ~p ~n~p~n",[t[:sources],Enum.filter(t[:sources],fn(s) -> not Enum.any?(tracenumbers, fn(tn) -> s[:trace] == tn end) end)])
+																						 case Enum.filter(t[:sources],fn(s) -> not Enum.any?(tracenumbers, fn(tn) -> s[:trace] == tn end) end) do
+																							 [] ->
+																								 acc
+																							 ss ->
+																								 acc ++ [Map.put(t,:sources,ss)]
+																						 end
+																				 end)
+									 case newtrans do
+										 [] ->
+											 accefsm
+										 nt ->
+											 Map.put(accefsm,k,nt)
+									 end
+							 end)
+	end
+
+	def get_reachable_states(efsm) do
+		get_reach_step(efsm,[get_start(efsm)])
+	end
+	def get_reach_step(efsm,reachable) do
+		newreachable = :lists.usort(List.foldl(Map.keys(efsm),
+																	reachable,
+																	fn({from,to},acc) ->
+																			if :lists.member(from,acc) do
+																				[to | acc]
+																			else
+																				acc
+																			end
+																	end))
+		if newreachable == reachable do
+			reachable
+		else
+			get_reach_step(efsm,newreachable)
+		end
+	end
+
+	def remove_orphaned_states(efsm) do
+		reachable = get_reachable_states(efsm)
+		case Enum.filter(get_states(efsm), fn(s) -> not :lists.member(s,reachable) end) do
+			[] ->
+				efsm
+			clean ->
+				List.foldl(Map.keys(efsm),
+												%{},
+												fn({from,to},acc) ->
+														if :lists.member(from,clean) do
+															acc
+														else
+															Map.put(acc,{from,to},efsm[{from,to}])
+														end
+												end)
+		end
+	end
 end

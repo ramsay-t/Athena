@@ -1,0 +1,24 @@
+[
+[
+{"label":"start", "inputs":[], "outputs":["true"]}
+{"label":"allocate", "inputs":[], "outputs":["{ok,10}"]}
+{"label":"deallocate", "inputs":["10"], "outputs":["ok"]}
+]
+,[
+{"label":"start", "inputs":[], "outputs":["true"]}
+{"label":"allocate", "inputs":[], "outputs":["{ok,10}"]}
+{"label":"allocate", "inputs":[], "outputs":["{ok,11}"]}
+{"label":"deallocate", "inputs":["10"], "outputs":["ok"]}
+]
+,[
+{"label":"start", "inputs":[], "outputs":["true"]}
+{"label":"allocate", "inputs":[], "outputs":["{ok,10}"]}
+{"label":"deallocate", "inputs":["11"], "outputs":["{error,not_allocated}"]}
+]
+,[
+{"label":"start", "inputs":[], "outputs":["true"]}
+{"label":"allocate", "inputs":[], "outputs":["{ok,10}"]}
+{"label":"allocate", "inputs":[], "outputs":["{ok,11}"]}
+{"label":"deallocate", "inputs":["11"], "outputs":["ok"]}
+]
+]
