@@ -9,8 +9,13 @@
     {"label":"select","inputs":["coke"],"outputs":[]}
     ,{"label":"coin","inputs":["100"],"outputs":["100"]}
     ,{"label":"vend","inputs":[],"outputs":["coke"]}
-],
-[
+]
+,[
+    {"label":"select","inputs":["pepsi"],"outputs":[]}
+    ,{"label":"coin","inputs":["100"],"outputs":["100"]}
+    ,{"label":"vend","inputs":[],"outputs":["pepsi"]}
+]
+,[
     {"label":"select","inputs":["fanta"],"outputs":[]}
     ,{"label":"coin","inputs":["50"],"outputs":["50"]}
     ,{"label":"coin","inputs":["50"],"outputs":["100"]}
@@ -32,7 +37,14 @@
 ,[
     {"label":"select","inputs":["beer"],"outputs":[]}
     ,{"label":"coin","inputs":["100"],"outputs":["100"]}
+    ,{"label":"coin","inputs":["50"],"outputs":["150"]}
     ,{"label":"vend","inputs":[],"outputs":["beer"]}
 ]
-
+,[
+    {"label":"select","inputs":["wine"],"outputs":[]}
+    ,{"label":"coin","inputs":["100"],"outputs":["100"]}
+    ,{"label":"vend","inputs":[],"outputs":["{error,price:150}"]}
+    ,{"label":"coin","inputs":["50"],"outputs":["150"]}
+    ,{"label":"vend","inputs":[],"outputs":["wine"]}
+]
 ]

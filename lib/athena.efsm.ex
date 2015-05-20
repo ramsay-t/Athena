@@ -139,10 +139,13 @@ defmodule Athena.EFSM do
 									fn(e) ->
 											String.replace(
 																		 String.replace(
-																										String.replace(Exp.pp(varnames_to_dot(e)),"<>","&lt;&gt;"),
-																												">","&gt;"),
-																						"SUB&gt;",
-																						"SUB>")
+																										String.replace(
+																																	 String.replace(Exp.pp(varnames_to_dot(e)),"<>","&lt;&gt;"),
+																																					">","&gt;"),
+																													 "SUB&gt;",
+																													 "SUB>"),
+																						"=<",
+																						"=&lt")
 									end)
 		"[" <> Enum.join(es,",") <> "]"
 	end

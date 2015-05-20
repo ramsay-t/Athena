@@ -20,27 +20,12 @@ defmodule Athena.Intertrace do
 	#@spec get_inters(Athena.EFSM.t,Athena.traceset,%{integer => Athena.Intratrace.t}) :: list(t)
 	def get_inters(efsm,traceset,intras,interesting_traces) do
 		# Get sets of intras for which the start states match something interesting
-#		firsts = Enum.map(Map.keys(efsm),
-#								 fn({from,to}) ->
-#										 {from,find_firsts(efsm[{from,to}],intras,interesting_traces)}
-#								 end
-#						)
 		keys = Map.keys(efsm)
 		firsts = :skel.do([{:pool,
 												[fn({from,to}) -> {from,find_firsts(efsm[{from,to}],intras,interesting_traces)} end],
 												{:max,length(keys)}}],
 											keys)
 
-#		List.foldl(firsts,
-#							 [],
-#							 fn({fst,intras},acc) ->
-#									 case check_snds(efsm,traceset,intras) do
-#										 [] ->
-#											 acc
-#										 matches ->
-#											 acc ++ Enum.map(matches, fn({snd,i1,i2}) -> {fst,snd,i1,i2} end)
-#									 end
-#							 end)
      Enum.concat(:skel.do([{:pool,
 														[fn({fst,intras}) -> 
 																 matches = check_snds(efsm,traceset,intras)
@@ -103,7 +88,9 @@ defmodule Athena.Intertrace do
 																		if es1 == es2 do
 																			# Check I/O directions match
 																			if elem(intra[:fst],1) == elem(i2[:fst],1)
-																			and elem(intra[:snd],1) == elem(i2[:snd],1) do
+																			and elem(intra[:snd],1) == elem(i2[:snd],1) 
+																			and intra[:content] != i2[:content] 
+																			do
 																				[ {es1,{tn,intra},{tn2,i2}} | acc]
 																			else
 																				acc
@@ -112,14 +99,17 @@ defmodule Athena.Intertrace do
 																			acc
 																		end
 																	res ->
-																		raise Athena.LearnException, message: "Invalid trace in the EFSM?? " <> to_string(:io_lib.format("~p <<~p>>",[slice2,res]))
+	  		  													#raise Athena.LearnException, message: "Invalid trace in the EFSM?? " <> to_string(:io_lib.format("~p <<~p>>",[slice2,res]))
+																		acc
 																end
 															else
 																acc
 															end
 													end)
 						 res ->
-							 raise Athena.LearnException, message: "Invalid trace in the EFSM?? " <> to_string(:io_lib.format("~p <<~p>>",[slice1,res]))
+							 #raise Athena.LearnException, message: "Invalid trace in the EFSM?? " <> to_string(:io_lib.format("~p <<~p>>",[slice1,res]))
+							 # There is non determinism, this just means we can't check this trace because we can't reach the second point
+							 []
 					 end
 		hits ++ check_snds(efsm,traceset,intras)
 	end

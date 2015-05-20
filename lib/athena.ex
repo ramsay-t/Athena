@@ -77,6 +77,8 @@ defmodule Athena do
 	defp fix_non_dets(efsm,traceset) do
 		{_,[{tn,t}]} = Enum.split(traceset,length(traceset)-1)
 		case EFSM.walk(t,efsm) do
+			{:ok,_end,_outputs,_path} ->
+				efsm
 			{:nondeterministic,{state,data},event,path,_alts} ->
 				:io.format("Nondeterministic at ~p doing ~p~n~p~n",[state,event,path])
 
@@ -93,85 +95,90 @@ defmodule Athena do
 				{prefix,_} = Enum.split(t,length(path))
 				:io.format("Prefix: ~p~nEvent: ~p~n",[prefix,event])
 
-				traceroutes = Enum.flat_map(outgoing, fn({_key,trans}) ->
+				tranbinds = Enum.flat_map(outgoing, fn({key,trans}) ->
 																									Enum.flat_map(trans,fn(tran) ->
-																																					if tran[:label] == event[:label] do
-																																						if Label.is_possible?(tran,ips,data) do
-																																							Enum.map(tran[:sources],fn(s) -> 
-																																																					sn = s[:trace]
-																																																					if sn == tn do
-																																																						{tn,path}
-																																																					else
-																																																						case get_path(efsm,state,get_trace(traceset,sn)) do
-																																																							nil ->
-																																																								nil
-																																																							path ->
-																																																								{sn,path}
-																																																						end
-																																																					end
-																																																			end)
-																																						else
-																																							[]
-																																						end
-																																					else
-																																						[]
-																																					end
-																																			end)
-																							end)
+																																		 if tran[:label] == event[:label] do
+																																			 #if Label.is_possible?(tran,ips,data) do
+																																				 binds = make_bind(efsm,traceset,tran,state)
+																																				 [{key,tran,binds}]
+																																			 #else
+																																			#	 []
+																																			# end
+																																		 else
+																																			 []
+																																		 end
+																																 end)
+																						end)
 				# Find last difference (if not root...)
-				:io.format("traceroutes: ~p~n",[traceroutes])
-				ld = last_divergence(tn,path,Enum.filter(traceroutes,fn(r) -> r != nil end))
-				if ld == [] do
-					:io.format("Root last divergence: trace ~p~n~p~n~p~n",[tn,t,traceroutes])
-					raise Athena.LearnException, message: "Broken..."
+				:io.format("tranbinds: ~p~n",[tranbinds])
+				newtrans = Enum.map(tranbinds,
+														fn({key,tran,binds}) ->
+																pos = Enum.map(binds,fn(b) -> Map.put(b,:possible,true) end)
+																nonpos = Enum.flat_map(tranbinds, 
+																											 fn({k2,t2,b2}) -> 
+																													 if t2 != tran do 
+																														 Enum.map(b2,fn(b) -> Map.put(b,:possible,false) end) 
+																													 else 
+																														 [] 
+																													 end
+																											 end)
+								 								all = pos ++ nonpos
+																:io.format("Distinguish:~n~p~n",[all])
+																case GP.infer(all,:possible,[{:pop_size,10*length(all)},{:limit,40}]) do
+																	{:incomplete,best} ->
+																		:io.format("Best I could do was ~p~n",[best])
+																		{key,tran,nil}
+																	guard ->
+																		{key,tran,guard}
+																end
+														end)
+				:io.format("New Trans:~n~p~n",[newtrans])
+				case Enum.filter(newtrans,fn({_,_,g}) -> g != nil end) do
+					[] ->
+						# Force split...
+						:io.format("Cannot generate guards at state ~p for transitions ~p~n~p~n",[state,event[:label],t])
+						:io.format("~p~n",[EFSM.to_dot(efsm)])
+						raise Athena.LearnException, message: "No valid guards - possible non-determinism in the underlying data?"
+					[{k,t,g} | _more] ->
+						# Assuming only one matters, and/or the others are just negations.....
+						#FIXME this is probably wrong for multiple labels...
+						ntk = :lists.reverse(List.foldl(efsm[k],
+																						[],
+																						fn(ot,acc) ->
+																								if ot == t do
+																									n = Map.put(t,:guards,[g])
+																									[n | acc]
+																								else
+																									[ot | acc]
+																								end
+																						end))
+						newefsm = Map.put(efsm,k,ntk)
+						ng = ILP.simplify({:nt,g})
+						refsm = List.foldl(newtrans,
+											 newefsm,
+											fn({ok,ot,og},accefsm) ->
+													if ok == k do
+														accefsm
+													else
+														ontk = :lists.reverse(List.foldl(accefsm[ok],
+																						 [],
+																						 fn(oot,acc) ->
+																								 if oot == ot and (not (oot == t)) do
+																									 if og == nil do
+																										 [Map.put(ot,:guards,[ng]) | acc]
+																									 else
+																										 [Map.put(ot,:guards,[og]) | acc]
+																									 end
+																								 else
+																									 [ot | acc]
+																								 end
+																						 end))
+														Map.put(accefsm,ok,ontk)
+													end
+											end)
+						:io.format("~n~p~n~n",[EFSM.to_dot(refsm)])
+						refsm
 				end
-				{_,[{lf,lt,ltran}]} = Enum.split(ld,length(ld)-1)
-				# remove transition on path that brought t to this path
-				# add transition from there to State alt...
-				newstate = state <> "a"
-
-				# Remove all the conflicting transitions
-				efsmp = List.foldl(Map.keys(efsm),
-															 %{},
-															 fn({f,t},accefsm) ->
-																	 newt = List.foldl(efsm[{f,t}],[],fn(tran,acc) ->
-																																				if tran[:label] == event[:label] do
-																																					if Label.is_possible?(tran,ips,data) do
-																																						acc
-																																					else
-																																						acc ++ [tran]
-																																					end
-																																				else
-																																					acc ++ [tran]
-																																				end
-																																		end)
-																	 if newt == [] do
-																		 accefsm
-																	 else
-																		 Map.put(accefsm,{f,t},newt)
-																	 end
-															 end)
-
-				newtran = List.foldl(efsm[{lf,lt}],[],fn(tr,acc) ->
-																									if tr != ltran do
-																										acc ++ [tr]
-																									else
-																										acc
-																									end
-																							end)
-
-				efsmpp = case newtran do
-									[] ->
-										Map.delete(efsmp,{lf,lt})
-									_ ->
-										Map.put(efsmp,{lf,lt},newtran)
-								end
-				efsmppp = Map.put(efsmpp,{lf,newstate},[ltran])
-
-				{finalefsm,_} = EFSM.add_traces(traceset,EFSM.remove_orphaned_states(efsmppp))
-				finalefsm
-			{:ok,_end,_outputs,_path} ->
-				efsm
 			res ->
 				raise Athena.LearnException, message: "Unimplemented problem with adding a new trace.\n" <> to_string(:io_lib.format("~p~nTrace: ~p~n",[res,t]))
 		end
@@ -252,35 +259,55 @@ defmodule Athena do
 		end
 	end
 
-	defp make_bind(efsm,traceset,t) do
+	defp make_bind(efsm,traceset,t,state) do
 		Enum.map(t[:sources],
 						 fn(s) ->
 								 {prefix,tail} = Enum.split(get_trace(traceset,s[:trace]),s[:event]-1)
 								 event = hd(tail)
-								 {:ok,{_,data},_,_} = EFSM.walk(prefix,efsm)
+								 data = get_data(efsm,prefix,state)
 								 midbind = List.foldl(Enum.zip(:lists.seq(1,length(event[:inputs])),event[:inputs]),
-																			data,
-																			fn({idx,i},acc) ->
-																					val = case Integer.parse(i) do
-																									{v,""} ->
-																										v
-																									_ ->
-																										i
-																								end
-																					Map.put(acc,"i" <> to_string(idx),val)
-																			end)
-								 List.foldl(Enum.zip(:lists.seq(1,length(event[:outputs])),event[:outputs]),
-																 midbind,
-																 fn({idx,o},acc) ->
-																					val = case Integer.parse(o) do
-																									{v,""} ->
-																										v
-																									_ ->
-																										o
-																								end
-																		 Map.put(acc,"o" <> to_string(idx),val)
-																 end)
+																					 data,
+																					 fn({idx,i},acc) ->
+																							 val = case Integer.parse(i) do
+																											 {v,""} ->
+																												 v
+																											 _ ->
+																												 i
+																										 end
+																							 Map.put(acc,"i" <> to_string(idx),val)
+																					 end)
+								# List.foldl(Enum.zip(:lists.seq(1,length(event[:outputs])),event[:outputs]),
+								#								 midbind,
+								#								 fn({idx,o},acc) ->
+								#										 val = case Integer.parse(o) do
+								#														 {v,""} ->
+								#															 v
+								#														 _ ->
+								#															 o
+								#													 end
+								#										 Map.put(acc,"o" <> to_string(idx),val)
+								#								 end)
 						 end)
+	end
+
+	defp get_data(efsm,prefix,state) do
+		case EFSM.walk(prefix,efsm) do
+			{:ok,{s,d},_,_} ->
+				if s == state do
+					d
+				else
+					{pp,_} = Enum.split(prefix,length(prefix)-1)
+					case pp do
+						[] ->
+							raise Athena.LearnException, message: "Could not build data for " <> to_string(:io_lib.format("~p",[prefix])) <> " to state " <> to_string(state)
+						_ ->
+							get_data(efsm,pp,state)
+					end
+				end
+			fail ->
+					{pp,_} = Enum.split(prefix,length(prefix)-1)
+					get_data(efsm,pp,state)				
+		end
 	end
 
 	defp last_divergence(_tn,[],_opaths) do
@@ -356,21 +383,14 @@ defmodule Athena do
 						:os.cmd('mv current_efsm_tmp.png current_efsm.png')
 
 						:io.format("Merging... ")
-						{dirtyefsm,merges} = EFSM.merge(s1,s2,efsm)
+						{newefsm,merges} = EFSM.merge(s1,s2,efsm)
 						case merges do
 							[] ->
 								raise Athena.LearnException, message: "No merges happened!"
 							_ ->
-								:io.format("~p merges~nChecking...",[length(merges)])
+								:io.format("~p merges~n",[length(merges)])
 								#if EFSM.traces_ok?(newefsm,traceset) do
-								newefsm = case EFSM.check_traces(dirtyefsm,traceset) do
-														:ok ->
-															# Carry on...
-															dirtyefsm
-														res ->
-															:io.format("Broken trace:~n~p~n",[res])
-															raise Athena.LearnException, message: "Failed check"
-													end
+								
 								File.write("efsm_" <> s1 <> "," <> s2 <> ".dot",EFSM.to_dot(newefsm),[:write])
 								
 								interesting = Athena.EFSMServer.get_interesting_traces(Enum.map(merges,fn({x,y}) -> x <> "," <> y end),newefsm)
@@ -386,18 +406,22 @@ defmodule Athena do
 								
 								#FIXME GP improve guards?
 								
-								# Clear the skips because something has changed...
 								#:io.format("Now ~p states~n",[length(EFSM.get_states(newnewefsm))])
-								:io.format("OK!~n")
 								
 								File.write("current_efsm.dot",EFSM.to_dot(newnewefsm,"labelloc=\"t\";\nlabel=\"EFSM " <> to_string(length(traceset)) <> "\";\n"),[:write])
 								:os.cmd('dot -Tpng current_efsm.dot > current_efsm_tmp.png')
 								:os.cmd('mv current_efsm_tmp.png current_efsm.png')
 								
-								learn_step(newnewefsm,selector,[],intraset,traceset,threshold)
-							#	else
-							#		raise Athena.LearnException, message: "Failed check"
-							#	end
+								:io.format("Checking...")
+								case EFSM.check_traces(newnewefsm,traceset) do
+									:ok ->
+										:io.format("OK!~n")
+								    # Clear the skips because something has changed...
+										learn_step(newnewefsm,selector,[],intraset,traceset,threshold)
+									res ->
+										:io.format("Failed: ~p~n",[res])
+										raise Athena.LearnException, message: "Failed check"
+								end								
 						end
 						rescue
 							_e in Athena.LearnException ->
