@@ -13,6 +13,10 @@ defmodule Athena.EFSM do
 		elem(add_traces(traceset, %{}),0)
 	end
 
+	def add_trace(efsm,trace) do
+		add_traces(efsm,[trace])
+	end
+
 	@doc """
   Add a list of traces to the EFSM.
 
@@ -29,6 +33,10 @@ defmodule Athena.EFSM do
 		end
 	end
 
+	def add_tail(efsm,state,tn,tail,offset) do
+		extend(offset,tail,tn,state,efsm)
+	end
+
 	def add_traces_step([],efsm,_start,hits) do
 		{efsm,hits}
 	end
@@ -37,7 +45,7 @@ defmodule Athena.EFSM do
 			{newefsm,hits} = extend(0,t,tn,start,efsm)
 			add_traces_step(ts,newefsm,start,[start|hits])
 		else
-			case walk(t,{start,%{}},efsm) do
+			case walk(efsm,t,{start,%{}}) do
 				{:ok,_state,_outputs,path} -> 
 					add_traces_step(ts,add_source(path,t,tn,efsm),start,hits)
 				{:failed_after,prefix,{state,_},path} ->
@@ -137,15 +145,14 @@ defmodule Athena.EFSM do
 	defp exps_to_dot(exps) do
 		es = Enum.map(exps,
 									fn(e) ->
-											String.replace(
-																		 String.replace(
-																										String.replace(
-																																	 String.replace(Exp.pp(varnames_to_dot(e)),"<>","&lt;&gt;"),
-																																					">","&gt;"),
-																													 "SUB&gt;",
-																													 "SUB>"),
-																						"=<",
-																						"=&lt")
+											res = String.replace(Exp.pp(varnames_to_dot(e)),"=<","&le;")
+											res = String.replace(res,"=>","&ge;")
+											res = String.replace(res,"<","&lt;")
+											res = String.replace(res,">","&gt;")
+											res = String.replace(res,"SUB&gt;","SUB>")
+											res = String.replace(res,"&lt;SUB","<SUB")
+											res = String.replace(res,"&lt;/SUB","</SUB")
+											res
 									end)
 		"[" <> Enum.join(es,",") <> "]"
 	end
@@ -180,10 +187,10 @@ defmodule Athena.EFSM do
 	@doc """
   Attempt to 'walk' the trace over the given EFSM.
 
-  This is equivilent to walk(trace,{get_start(efsm),%{}},efsm).
+  This is equivilent to walk(efsm,trace,{get_start(efsm),%{}}).
   """
-	def walk(trace,efsm) do
-		walk(trace,{get_start(efsm),%{}},efsm)
+	def walk(efsm,trace) do
+		walk(efsm,trace,{get_start(efsm),%{}})
 	end
 
 	@doc """
@@ -193,13 +200,17 @@ defmodule Athena.EFSM do
   If it succeeds (that is, if all the events can be matched to transitions) then it returns the final state,
   final bindings, the sequence of output bindings, and a 'path' through the machine.
   """
-	@spec walk(Athena.trace,{String.t,bindings},t) :: 
+	@spec walk(t,Athena.trace,{String.t,bindings}) :: 
 		{:ok,{String.t,bindings},list(bindings),list({String.t,String.t,Label.t})} 
 	| {:failed_after,String.t,{String.t,bindings},list({String.t,String.t,Label.t})}
 	| {:output_missmatch,String.t,{String.t,bindings},%{:event => Athena.event, :observed => list(%{Epagoge.Exp.varname_t => String.t})},list({String.t,String.t,Label.t})}
 	| {:nondeterministic,{String.t,bindings},Athena.event,list({String.t,String.t,Label.t}),list(String.t)}
-	def walk(trace,{state,bindings},efsm) do
+	def walk(efsm,trace,{state,bindings}) do
 		walk_step(trace,[],[],{state,bindings},[],efsm)
+	end
+	def walk(efsm,trace,other) do
+		:io.format("Waht???~n~p~n~p~n",[other,:erlang.process_display(self(),:backtrace)])
+		nil
 	end
 
 	defp walk_step([],outputs,_,{state,bind},path,_) do
@@ -256,14 +267,28 @@ defmodule Athena.EFSM do
 	end
 	defp extend_step([{n,e} | ts],tracenum,state,efsm,hits) do
 		# This assumes that states are simply numbered. It will break horribly if they are given more complex names.
-		newstate = case get_states(efsm) do 
-						 [] -> to_string(elem(Integer.parse(state),0) + 1)
-						 states -> 
-							 # The state names need to be numerically sorted to get the highest
-							 laststate = hd(Enum.reverse(:lists.usort(Enum.map(states,fn(s) -> elem(Integer.parse(s),0) end))))
-							 to_string(laststate + 1)
-					 end
+		newstate = case get_next_state_name(efsm) do
+								 ^state -> to_string(elem(Integer.parse(state),0) + 1)
+								 s -> s
+							 end
 		extend_step(ts,tracenum,newstate,Map.put(efsm,{state,newstate},[Map.put(Label.event_to_label(e),:sources,[%{trace: tracenum, event: n}])]),hits ++ [newstate])
+	end
+
+	def get_next_state_name(efsm) do
+		case get_states(efsm) do 
+			[] -> "0"
+			states -> 
+				# The state names need to be numerically sorted to get the highest
+				all_numbers = List.foldl(states, [], fn(s,acc) -> 
+																								 if String.contains?(s,",") do
+																									 acc ++ Enum.map(String.split(s,","), fn(ss) -> elem(Integer.parse(ss),0) end)
+																								 else
+																									 [elem(Integer.parse(s),0) | acc]
+																								 end
+																						 end)
+				laststate = hd(Enum.reverse(:lists.usort(all_numbers)))
+				to_string(laststate + 1)
+		end
 	end
 
 	def bind_entries(ips,prefix) do
@@ -284,12 +309,12 @@ defmodule Athena.EFSM do
   Where the merge produces non-determinism (due to subsuming guards and matching event names) this will also merge the destination states. 
   This can lead to further merges as the algorithm 'zips' together chains of states that are now apparently equivilent.
   """
-	@spec merge(String.t,String.t,t) :: t
-	def merge(s1,s2,efsm) do
-		merge(s1,s2,efsm,[])
+	@spec merge(t,String.t,String.t) :: t
+	def merge(efsm,s1,s2) do
+		merge(efsm,s1,s2,[])
 	end
 
-	def merge(s1,s2,efsm,ignore) do
+	def merge(efsm,s1,s2,ignore) do
 		#:io.format("Merging ~p and ~p~n",[s1,s2])
 		newname = if s1 == s2 do s1 else to_string(s1) <> "," <> to_string(s2) end
 		# Replace old elements of the transition matrix with the new state
@@ -315,7 +340,7 @@ defmodule Athena.EFSM do
 												 fn({{d1,_l1},{d2,_l2}},{accefsm,accmerges}) ->
 														 case Enum.member?(accmerges,{d1,d2}) do
 															 false ->
-																 {nnefsm,submerges} = merge(true_name(d1,accmerges),true_name(d2,accmerges),accefsm,accmerges)
+																 {nnefsm,submerges} = merge(accefsm,true_name(d1,accmerges),true_name(d2,accmerges),accmerges)
 																 {nnefsm,accmerges ++ submerges}
 															 true ->
 																{accefsm,accmerges} 
@@ -436,6 +461,20 @@ defmodule Athena.EFSM do
 		end
 	end
 
+	def remove_trans(efsm,from,to,tran) do
+		ts = efsm[{from,to}]
+		if ts == nil do
+			efsm
+		else
+			case Enum.filter(ts,fn(t) -> t != tran end) do
+				[] ->
+					Map.delete(efsm,{from,to})
+				tsp ->
+					Map.put(efsm,{from,to},tsp)
+			end
+		end
+	end
+
 	def traces_ok?(efsm,[{_,t} | traceset]) do
 		traces_ok?(efsm,[t | Enum.map(traceset,fn({_,t}) -> t end)])
 	end
@@ -444,7 +483,7 @@ defmodule Athena.EFSM do
 	end
 	def traces_ok?(efsm, [t | more]) do
 		try do
-			case walk(t,efsm) do
+			case walk(efsm,t) do
 				{:ok,{_,_},_,_} ->
 					traces_ok?(efsm,more)
 				res ->
@@ -460,11 +499,11 @@ defmodule Athena.EFSM do
 	def check_traces(efsm,[{_,t} | traceset]) do
 		check_traces(efsm,[t | Enum.map(traceset,fn({_,t}) -> t end)])
 	end
-	def check_traces(efsm,[]) do
+	def check_traces(_efsm,[]) do
 		:ok
 	end
 	def check_traces(efsm,[t | more]) do
-		case walk(t,efsm) do
+		case walk(efsm,t) do
 			{:ok,{_,_},_,_} ->
 				check_traces(efsm,more)
 			res ->
@@ -483,14 +522,14 @@ defmodule Athena.EFSM do
 	end
 
 	def remove_traces(efsm,tracenumbers) do
-		:io.format("Removing ~p~n",[tracenumbers])
+		#:io.format("Removing ~p~n",[tracenumbers])
 		List.foldl(Map.keys(efsm),
 							 %{},
 							 fn(k,accefsm) ->
 									 newtrans = List.foldl(efsm[k],
 																				 [],
 																				 fn(t,acc) ->
-																						 :io.format("Filtering ~p ~n~p~n",[t[:sources],Enum.filter(t[:sources],fn(s) -> not Enum.any?(tracenumbers, fn(tn) -> s[:trace] == tn end) end)])
+																						 #:io.format("Filtering ~p ~n~p~n",[t[:sources],Enum.filter(t[:sources],fn(s) -> not Enum.any?(tracenumbers, fn(tn) -> s[:trace] == tn end) end)])
 																						 case Enum.filter(t[:sources],fn(s) -> not Enum.any?(tracenumbers, fn(tn) -> s[:trace] == tn end) end) do
 																							 [] ->
 																								 acc
@@ -544,4 +583,24 @@ defmodule Athena.EFSM do
 												end)
 		end
 	end
+
+	def get_possible_trans(efsm,state,data,event) do
+		ips = bind_entries(event[:inputs],"i")
+		List.foldl(Map.keys(efsm),
+							 [],
+							 fn({from,to}, acc) ->
+									 if from == state do
+										 acc ++ Enum.filter(efsm[{from,to}],fn(t) ->
+																									if t[:label] == event[:label] do
+																										Label.is_possible?(t,ips,data)
+																									else
+																										false
+																									end
+																							end)
+									 else
+										 acc
+									 end
+							 end)
+	end
+
 end

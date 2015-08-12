@@ -73,7 +73,7 @@ defmodule Athena.Intertrace do
 	defp check_snds(efsm,traceset,[{tn,intra} | intras]) do
 		start = Athena.EFSM.get_start(efsm)
 		slice1 = Enum.slice(Athena.get_trace(traceset,tn),0,elem(intra[:snd],0)-1)
-		hits = case Athena.EFSM.walk(slice1,{start,%{}},efsm) do
+		hits = case Athena.EFSM.walk(efsm,slice1,{start,%{}}) do
 						 {:ok,{es1,_},_,_} -> 
 							 List.foldl(intras,
 													[],
@@ -83,12 +83,16 @@ defmodule Athena.Intertrace do
 															if tn2 != tn do
 																# Check end states match
 																slice2 = Enum.slice(Athena.get_trace(traceset,tn2),0,elem(i2[:snd],0)-1)
-																case Athena.EFSM.walk(slice2,{start,%{}},efsm) do
+																case Athena.EFSM.walk(efsm,slice2,{start,%{}}) do
 																	{:ok,{es2,_},_,_} -> 
 																		if es1 == es2 do
 																			# Check I/O directions match
+																			# and IO element numbers match
+																			# i.e. both have to reference input 1 or output 3
 																			if elem(intra[:fst],1) == elem(i2[:fst],1)
 																			and elem(intra[:snd],1) == elem(i2[:snd],1) 
+																			and elem(intra[:fst],2) == elem(i2[:fst],2)
+																			and elem(intra[:snd],2) == elem(i2[:snd],2) 
 																			and intra[:content] != i2[:content] 
 																			do
 																				[ {es1,{tn,intra},{tn2,i2}} | acc]

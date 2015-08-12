@@ -139,7 +139,7 @@ defmodule Athena.EFSMServer do
 	end
 	def traces_ok?(efsm,[{_,t} | more]) do
 		try do
-			EFSM.walk(t,efsm)
+			EFSM.walk(efsm,t)
 			traces_ok?(efsm,more)
 		rescue
 			_e in Athena.LearnException ->

@@ -26,7 +26,7 @@ defmodule Athena.Label do
 	end
 
 	def is_possible?(l,inputs,bind) do
-		space = Map.merge(inputs,bind)
+		space = Map.merge(bind,inputs)
 		Enum.all?(l[:guards], fn(g) -> 
 															{res,_}  = Epagoge.Exp.eval(g,space)
 															# Yes, this looks redundant but Enum.all? seems to only actually check

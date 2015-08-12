@@ -1,0 +1,16 @@
+[
+[
+    {"label":"connect","inputs":[],"outputs":[]}
+    ,{"label":"login","inputs":["ramsay"],"outputs":["key=abc;session=ok;"]}
+    ,{"label":"browse","inputs":["open"],"outputs":["open"]}
+    ,{"label":"browse","inputs":["secret","k=abc"],"outputs":["secret"]}
+    ,{"label":"browse","inputs":["open"],"outputs":["open"]}
+],
+[
+    {"label":"connect","inputs":[],"outputs":[]}
+    ,{"label":"login","inputs":["john"],"outputs":["key=cde;session=ok;"]}
+    ,{"label":"browse","inputs":["secret","k=cde"],"outputs":["secret"]}
+    ,{"label":"browse","inputs":["open"],"outputs":["open"]}
+    ,{"label":"browse","inputs":["secret","k=cde"],"outputs":["secret"]}
+]
+]

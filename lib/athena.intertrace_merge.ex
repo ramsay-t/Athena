@@ -4,19 +4,24 @@ defmodule Athena.IntertraceMerge do
 	def one_inter(efsm, inter, traceset) do
 		try do
 			{efsmp,vname} = fix_first(efsm,inter,traceset)
+			
 			efsmpp = fix_second(efsmp,inter,vname,traceset)
-			{s1,s2,{tn1,i1},{tn2,i2}} = inter
-			#File.write("tidy" <> s1 <>".dot",EFSM.to_dot(efsmpp),[:write])
-			{efsmppp,m1} = EFSM.merge(s1,s1,efsmpp)
-			#File.write("tidy" <> s2 <>".dot",EFSM.to_dot(efsmppp),[:write])
-			{newefsm,m2} = EFSM.merge(s2,s2,efsmppp)
-			#File.write("after_tidy" <> s1 <> "and" <> s2 <>".dot",EFSM.to_dot(newefsm),[:write])
+			#efsmpp = efsmp
+
+			{s1,s2,_,_} = inter
+
+			newefsm = EFSM.merge(efsmpp,s1,s1)
+			          |> elem(0)
+								|> EFSM.merge(s2,s2)
+								|> elem(0)
+
 			# Check we didn't break anything...
 			if EFSM.traces_ok?(newefsm,traceset) do
-				:io.format("WORKED! Applying ~p~n",[inter])
+				#:io.format("WORKED! Applying ~p~n",[inter])
 				newefsm
 			else
-				:io.format("FAILED Applying ~p~n~p~n",[inter,EFSM.to_dot(newefsm)])
+				#:io.format("FAILED Applying ~p~n~p~n",[inter,EFSM.to_dot(newefsm)])
+				#:io.format("FAILED Applying ~p~n",[inter])
 				raise Athena.LearnException, message: "Failed check"
 			end
 			rescue
@@ -26,6 +31,8 @@ defmodule Athena.IntertraceMerge do
 	end
 
 	defp fix_first(efsm,{s1,_,{tn1,i1},{tn2,i2}},traceset) do
+		#:io.format("Fix Firsts in~n~p~n~p~n",[{tn1,i1},{tn2,i2}])
+
 		{e1n,io,idx} = i1[:fst]
 		{e2n,io,idx} = i2[:fst]
 		transet = get_trans_set(efsm,s1)
@@ -43,6 +50,7 @@ defmodule Athena.IntertraceMerge do
 				case io do
 					:input ->
 						ng = {:match,pre,suf,{:v,ioname}}
+						#:io.format("Make Match: ~p -> ~p,~p~n",[{{str1,i1[:content]},{str2,i2[:content]}},pre,suf])
 						# If the match is over {"",""} then the simplifier will take care of it...
 						newguards1 = Epagoge.ILP.simplify([ng | tran1[:guards]])
 						newguards2 = Epagoge.ILP.simplify([ng | tran2[:guards]])
@@ -62,10 +70,16 @@ defmodule Athena.IntertraceMerge do
 						newtrans1 = Map.put(Map.put(tran1,:guards,newguards1),:updates,newupdates1)
 						newtrans2 = Map.put(Map.put(tran2,:guards,newguards2),:updates,newupdates2)
 
-						efsmp = EFSM.add_trans(efsm,from1,to1,newtrans1)
-						newefsm = EFSM.add_trans(efsmp,from2,to2,newtrans2)
+						newefsm = EFSM.add_trans(efsm,from1,to1,newtrans1)
+						          |> EFSM.add_trans(from2,to2,newtrans2)
+
+						#:io.format("Fixed first:~n ~p -> ~p~n~p~n",[from1,to1,newtrans1])
+						#:io.format("and ~p -> ~p~n~p~n~n",[from2,to2,newtrans2])
+
 						{newefsm,rname}
 					:output ->
+						#:io.format("Make output Match: ~p -> ~p,~p~n",[{{str1,i1[:content]},{str2,i2[:content]}},pre,suf])
+
 						{rname,nu} = 
 							make_update_if_needed(efsm,pre,suf,ioname,tran1[:updates]++tran2[:updates])
 						{newupdates1,newupdates2} = 
@@ -78,30 +92,27 @@ defmodule Athena.IntertraceMerge do
 									{newupdates1,newupdates2}
 							end
 
-						# I'm not sure it ever makes sense to modify the output of the first element?
-						#case make_assign_if_needed(ioname,pre,suf,rname,tran1[:outputs]++tran2[:outputs]) do
-						#	nil ->
-						#		# No change needed - the change is already subsumed by something
-						#		newops1 = tran1[:outputs]
-						#		newops2 = tran2[:outputs]
-						#	no ->
-						#		newops1 = Epagoge.ILP.simplify([no | tran1[:outputs]])
-						#		newops2 = Epagoge.ILP.simplify([no | tran2[:outputs]])
-						#end
-						newops1 = tran1[:outputs]
-						newops2 = tran2[:outputs]
+						newtrans1 = Map.put(tran1,:updates,newupdates1)
+						newtrans2 = Map.put(tran2,:updates,newupdates2)
 
-						newtrans1 = Map.put(Map.put(tran1,:updates,newupdates1),:outputs,newops1)
-						newtrans2 = Map.put(Map.put(tran2,:updates,newupdates2),:outputs,newops2)
+						#:io.format("Made output Match: ~p -> ~n~p ~p~n",[{{str1,i1[:content]},{str2,i2[:content]}},newtrans1,newtrans2])
+												
+						
+						newefsm = EFSM.add_trans(efsm,from1,to1,newtrans1)
+						          |> EFSM.add_trans(from2,to2,newtrans2)
 
-						efsmp = EFSM.add_trans(efsm,from1,to1,newtrans1)
-						newefsm = EFSM.add_trans(efsmp,from2,to2,newtrans2)
+						#:io.format("Fixed first ~p -> ~p~n~p~n",[from1,to1,newtrans1])
+						#:io.format("and ~p -> ~p~n~p~n~n",[from2,to2,newtrans2])
+
 						{newefsm,rname}
 				end
+			other ->
+				:io.format("Wait, whut?? ~p~n",[other])
+				raise "Whut??"
 		end
 	end
 
-	defp fix_second(efsm,{_,s2,{tn1,i1},{tn2,i2}},rname,traceset) do
+	defp fix_second(efsm,{_s1,s2,{tn1,i1},{tn2,i2}},rname,traceset) do
 
 		{e1n,io,idx} = i1[:snd]
 		{e2n,io,idx} = i2[:snd]
@@ -125,16 +136,40 @@ defmodule Athena.IntertraceMerge do
 								# No computable update...
 								raise Athena.LearnException, message: to_string(:io_lib.format("No computable generalisation for ~p => ~p vs ~p => ~p~n",[str1,i1[:content],str2,i2[:content]]))
 							{pre,suf} ->
-								ng = {:match,pre,suf,{:v,ioname}}
+								ng = {:eq,{:v,rname},Epagoge.ILP.simplify({:get,pre,suf,{:v,ioname}})}
+
+								# Remove the original literal guard if its still there
+								# If it isn't then the subsumption/simplifier should resolve this
+								fgs1 = Enum.filter(tran1[:guards], fn(g) -> 
+																											 try do
+																												 {:eq,{:v,^ioname},{:lit,_}} = g
+																												 false
+																											 catch
+																												 :error,_ ->
+																													 true
+																											 end
+																									 end)
+								fgs2 = Enum.filter(tran2[:guards], fn(g) -> 
+																											 try do
+																												 {:eq,{:v,ioname},{:lit,_}} = g
+																												 false
+																											 catch
+																												 :error,_ ->
+																													 true
+																											 end
+																									 end)
+
 								# If the match is over {"",""} then the simplifier will take care of it...
-								newguards1 = Epagoge.ILP.simplify([ng | tran1[:guards]])
-								newguards2 = Epagoge.ILP.simplify([ng | tran2[:guards]])
-								
+								newguards1 = Epagoge.ILP.simplify([ng | fgs1])
+								newguards2 = Epagoge.ILP.simplify([ng | fgs2])
+
 								newtrans1 = Map.put(tran1,:guards,newguards1)
 								newtrans2 = Map.put(tran2,:guards,newguards2)
 
-								efsmp = EFSM.add_trans(efsm,from1,to1,newtrans1)
-								EFSM.add_trans(efsmp,from2,to2,newtrans2)
+								EFSM.add_trans(efsm,from1,to1,newtrans1)
+								|> EFSM.add_trans(from2,to2,newtrans2)
+								|> EFSM.remove_trans(from1,to1,tran1)
+								|> EFSM.remove_trans(from2,to2,tran2)
 						end
 					:output ->
 						case make_assign_if_needed(ioname,pre,suf,rname,tran1[:outputs]++tran2[:outputs]) do
@@ -148,8 +183,10 @@ defmodule Athena.IntertraceMerge do
 								newtrans1 = Map.put(tran1,:outputs,newops1)
 								newtrans2 = Map.put(tran2,:outputs,newops2)
 
-								efsmp = EFSM.add_trans(efsm,from1,to1,newtrans1)
-								EFSM.add_trans(efsmp,from2,to2,newtrans2)
+								#:io.format("Used ~p~nFixed second ~p -> ~p~n~p~nand ~p -> ~p~n~p~n~n",[{_s1,s2,{tn1,i1},{tn2,i2}},from1,to1,newtrans1,from2,to2,newtrans2])
+
+								EFSM.add_trans(efsm,from1,to1,newtrans1)
+								|> EFSM.add_trans(from2,to2,newtrans2)
 						end
 				end
 		end

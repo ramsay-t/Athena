@@ -1,0 +1,53 @@
+[
+[
+    {"label":"connect","inputs":[],"outputs":[]}
+    ,{"label":"login","inputs":["ramsay"],"outputs":["abc"]}
+    ,{"label":"browse","inputs":["open"],"outputs":["open"]}
+    ,{"label":"browse","inputs":["secret","abc"],"outputs":["secret"]}
+    ,{"label":"browse","inputs":["open"],"outputs":["open"]}
+    ,{"label":"browse","inputs":["open"],"outputs":["open"]}
+    ,{"label":"browse","inputs":["secret","abc"],"outputs":["secret"]}
+    ,{"label":"browse","inputs":["open"],"outputs":["open"]}
+    ,{"label":"browse","inputs":["secret","abc"],"outputs":["secret"]}
+    ,{"label":"browse","inputs":["secret","abc"],"outputs":["secret"]}
+],
+[
+    {"label":"connect","inputs":[],"outputs":[]}
+    ,{"label":"login","inputs":["john"],"outputs":["cde"]}
+    ,{"label":"browse","inputs":["secret","cde"],"outputs":["secret"]}
+    ,{"label":"browse","inputs":["open"],"outputs":["open"]}
+    ,{"label":"browse","inputs":["open"],"outputs":["open"]}
+    ,{"label":"browse","inputs":["open"],"outputs":["open"]}
+    ,{"label":"browse","inputs":["secret","cde"],"outputs":["secret"]}
+    ,{"label":"browse","inputs":["secret","cde"],"outputs":["secret"]}
+],
+[
+    {"label":"connect","inputs":[],"outputs":[]}
+    ,{"label":"login","inputs":["john"],"outputs":["cde"]}
+    ,{"label":"browse","inputs":["open"],"outputs":["open"]}
+    ,{"label":"browse","inputs":["secret","cde"],"outputs":["secret"]}
+    ,{"label":"browse","inputs":["open"],"outputs":["open"]}
+    ,{"label":"browse","inputs":["open"],"outputs":["open"]}
+    ,{"label":"browse","inputs":["secret","abc"],"outputs":["{error,access_denied}"]}
+    ,{"label":"browse","inputs":["secret","fff"],"outputs":["{error,access_denied}"]}
+    ,{"label":"browse","inputs":["secret","cde"],"outputs":["secret"]}
+],
+[
+    {"label":"connect","inputs":[],"outputs":[]}
+    ,{"label":"login","inputs":["chloe"],"outputs":["xyz"]}
+    ,{"label":"browse","inputs":["open"],"outputs":["open"]}
+    ,{"label":"browse","inputs":["secret","abc"],"outputs":["{error,access_denied}"]}
+    ,{"label":"browse","inputs":["secret","xyz"],"outputs":["secret"]}
+],
+[
+    {"label":"connect","inputs":[],"outputs":[]}
+    ,{"label":"login","inputs":["eve"],"outputs":["zzz"]}
+    ,{"label":"browse","inputs":["open"],"outputs":["open"]}
+    ,{"label":"browse","inputs":["secret","abc"],"outputs":["{error,access_denied}"]}
+    ,{"label":"browse","inputs":["secret","xyz"],"outputs":["{error,access_denied}"]}
+    ,{"label":"browse","inputs":["open"],"outputs":["open"]}
+    ,{"label":"browse","inputs":["open"],"outputs":["open"]}
+    ,{"label":"browse","inputs":["secret","xyz"],"outputs":["{error,access_denied}"]}
+    ,{"label":"browse","inputs":["secret","abc"],"outputs":["{error,access_denied}"]}
+]
+]
