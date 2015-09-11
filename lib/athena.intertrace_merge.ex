@@ -17,10 +17,10 @@ defmodule Athena.IntertraceMerge do
 
 			# Check we didn't break anything...
 			if EFSM.traces_ok?(newefsm,traceset) do
-				#:io.format("WORKED! Applying ~p~n",[inter])
+				:io.format("WORKED! Applying ~p~n~p~n~n",[inter,EFSM.to_dot(newefsm)])
 				newefsm
 			else
-				#:io.format("FAILED Applying ~p~n~p~n",[inter,EFSM.to_dot(newefsm)])
+				:io.format("FAILED Applying ~p~n~p~n",[inter,EFSM.to_dot(newefsm)])
 				#:io.format("FAILED Applying ~p~n",[inter])
 				raise Athena.LearnException, message: "Failed check"
 			end
@@ -100,7 +100,6 @@ defmodule Athena.IntertraceMerge do
 						
 						newefsm = EFSM.add_trans(efsm,from1,to1,newtrans1)
 						          |> EFSM.add_trans(from2,to2,newtrans2)
-
 						#:io.format("Fixed first ~p -> ~p~n~p~n",[from1,to1,newtrans1])
 						#:io.format("and ~p -> ~p~n~p~n~n",[from2,to2,newtrans2])
 
@@ -151,7 +150,7 @@ defmodule Athena.IntertraceMerge do
 																									 end)
 								fgs2 = Enum.filter(tran2[:guards], fn(g) -> 
 																											 try do
-																												 {:eq,{:v,ioname},{:lit,_}} = g
+																												 {:eq,{:v,^ioname},{:lit,_}} = g
 																												 false
 																											 catch
 																												 :error,_ ->
@@ -166,10 +165,13 @@ defmodule Athena.IntertraceMerge do
 								newtrans1 = Map.put(tran1,:guards,newguards1)
 								newtrans2 = Map.put(tran2,:guards,newguards2)
 
-								EFSM.add_trans(efsm,from1,to1,newtrans1)
+								res = EFSM.add_trans(efsm,from1,to1,newtrans1)
 								|> EFSM.add_trans(from2,to2,newtrans2)
 								|> EFSM.remove_trans(from1,to1,tran1)
 								|> EFSM.remove_trans(from2,to2,tran2)
+
+								#:io.format("************* ~p *****************~n~p~n****************************~n~n",[{str1,str2},EFSM.to_dot(res)])
+								res
 						end
 					:output ->
 						case make_assign_if_needed(ioname,pre,suf,rname,tran1[:outputs]++tran2[:outputs]) do
@@ -187,6 +189,9 @@ defmodule Athena.IntertraceMerge do
 
 								EFSM.add_trans(efsm,from1,to1,newtrans1)
 								|> EFSM.add_trans(from2,to2,newtrans2)
+								|> EFSM.remove_trans(from1,to1,tran1)
+								|> EFSM.remove_trans(from2,to2,tran2)
+
 						end
 				end
 		end

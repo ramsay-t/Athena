@@ -1,0 +1,46 @@
+[
+[
+    {"label":"lookup","inputs":["2"],"outputs":["[]"]}
+    ,{"label":"insert","inputs":["{1,1}"],"outputs":["ok"]}
+    ,{"label":"lookup","inputs":["2"],"outputs":["[]"]}
+]
+,[
+    {"label":"lookup","inputs":["1"],"outputs":["[]"]}
+    ,{"label":"insert","inputs":["{3,3}"],"outputs":["ok"]}
+    ,{"label":"insert","inputs":["{1,1}"],"outputs":["ok"]}
+    ,{"label":"lookup","inputs":["2"],"outputs":["[]"]}
+]
+,[
+    {"label":"lookup","inputs":["1"],"outputs":["[]"]}
+    ,{"label":"insert","inputs":["{1,1}"],"outputs":["ok"]}
+    ,{"label":"insert","inputs":["{3,3}"],"outputs":["ok"]}
+    ,{"label":"lookup","inputs":["2"],"outputs":["[]"]}
+]
+,[
+    {"label":"lookup","inputs":["2"],"outputs":["[]"]}
+    ,{"label":"insert","inputs":["{3,3}"],"outputs":["ok"]}
+    ,{"label":"insert","inputs":["{3,3}"],"outputs":["ok"]}
+    ,{"label":"lookup","inputs":["2"],"outputs":["[]"]}
+]
+,[
+    {"label":"lookup","inputs":["3"],"outputs":["[]"]}
+    ,{"label":"insert","inputs":["{3,3}"],"outputs":["ok"]}
+    ,{"label":"insert","inputs":["{3,3}"],"outputs":["ok"]}
+    ,{"label":"insert","inputs":["{3,3}"],"outputs":["ok"]}
+    ,{"label":"insert","inputs":["{1,1}"],"outputs":["ok"]}
+    ,{"label":"insert","inputs":["{1,1}"],"outputs":["ok"]}
+    ,{"label":"insert","inputs":["{1,1}"],"outputs":["ok"]}
+    ,{"label":"insert","inputs":["{3,3}"],"outputs":["ok"]}
+    ,{"label":"insert","inputs":["{1,1}"],"outputs":["ok"]}
+    ,{"label":"insert","inputs":["{1,1}"],"outputs":["ok"]}
+    ,{"label":"insert","inputs":["{1,1}"],"outputs":["ok"]}
+    ,{"label":"insert","inputs":["{1,1}"],"outputs":["ok"]}
+    ,{"label":"insert","inputs":["{1,1}"],"outputs":["ok"]}
+    ,{"label":"lookup","inputs":["2"],"outputs":["[]"]}
+]
+,[
+    {"label":"lookup","inputs":["2"],"outputs":["[]"]}
+    ,{"label":"insert","inputs":["{2,2}"],"outputs":["ok"]}
+    ,{"label":"lookup","inputs":["2"],"outputs":["[{2,2}]"]}
+]
+]

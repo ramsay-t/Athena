@@ -10,7 +10,7 @@ defmodule Athena.EFSM do
   """
 	@spec build_pta(Athena.traceset) :: t
 	def build_pta(traceset) do
-		elem(add_traces(traceset, %{}),0)
+		elem(add_traces(%{},traceset),0)
 	end
 
 	def add_trace(efsm,trace) do
@@ -26,7 +26,7 @@ defmodule Athena.EFSM do
   It requires a list of pairs of trace number and trace. The trace number is used to fill in the sources field of the
   transitions.
   """
-	def add_traces(traceset,efsm) do
+	def add_traces(efsm,traceset) do
 		case get_start(efsm) do
 			nil -> add_traces_step(traceset,efsm,"0",[])
 			start -> add_traces_step(traceset,efsm,start,[])
@@ -315,7 +315,7 @@ defmodule Athena.EFSM do
 	end
 
 	def merge(efsm,s1,s2,ignore) do
-		#:io.format("Merging ~p and ~p~n",[s1,s2])
+		:io.format("Merging ~p and ~p~n",[s1,s2])
 		newname = if s1 == s2 do s1 else to_string(s1) <> "," <> to_string(s2) end
 		# Replace old elements of the transition matrix with the new state
 		{newefsm,alltrans} = List.foldl(Map.keys(efsm),
@@ -487,11 +487,11 @@ defmodule Athena.EFSM do
 				{:ok,{_,_},_,_} ->
 					traces_ok?(efsm,more)
 				res ->
-						raise Athena.LearnException, message: "Trace failed: " <> to_string(:io_lib.format("~p",[res]))
+					#:io.format("FAILED:~nTrace:~p~n~p~n",[t,res])
+					raise Athena.LearnException, message: "Trace failed: " <> to_string(:io_lib.format("~p",[res]))
 			end
 		rescue
 			_e in Athena.LearnException ->
-				#:io.format("Trace failed:~n~p~n~p~n",[t,Exception.message(_e)])
 				false
 		end
 	end
@@ -544,6 +544,56 @@ defmodule Athena.EFSM do
 											 Map.put(accefsm,k,nt)
 									 end
 							 end)
+	end
+
+	def remove_tail_traces(efsm,state,tn,en) do
+		{newefsm,nextstate} = List.foldl(Map.keys(efsm),
+																				 {%{},:undefined},
+																				 fn({from,to},{accefsm,ns}) ->
+																						 if from == state do
+																							 trans = efsm[{from,to}]
+																							 {newtrans,next} = List.foldl(trans,
+																																						{[],:undefined},
+																																						fn(t,{acc,n}) ->
+																																								# Is this the one we are looking for?
+																																								if Enum.any?(t[:sources], fn(%{trace: t, event: e}) -> t == tn and e == en end) do
+																																									# Yes, filter out this trace and then move to the next state
+																																									case Enum.filter(t[:sources],fn(%{trace: t, event: e}) -> not (t == tn and e == en) end) do
+																																										[] ->
+																																											{acc,to}
+																																										ss ->
+																																											{acc ++ [Map.put(t,:sources,ss)],to}
+																																									end 
+																																								else
+																																									# No, leave it alone
+																																									{acc ++ [t],n}
+																																								end
+																																						end)
+																							 case next do
+																								 :undefined ->
+																									 # None of these were hits
+																									 {Map.put(accefsm,{from,to},trans),ns}
+																								 _ ->
+																									 newefsm = case newtrans do
+																															 [] ->
+																																 accefsm
+																															 _ ->
+																																 Map.put(accefsm,{from,to},newtrans)
+																														 end
+																									 {newefsm,next}
+																							 end
+																						 else
+																							 {Map.put(accefsm,{from,to},efsm[{from,to}]),ns}
+																						 end
+																				 end)
+		case nextstate do
+			:undefined ->
+				# Hopefully this is after the last event, so we wouldn't expect to find an outgoing transition for this en
+				newefsm
+			_ ->
+				# Move on to the next state and the next event
+				remove_tail_traces(newefsm,nextstate,tn,en+1) 
+		end
 	end
 
 	def get_reachable_states(efsm) do

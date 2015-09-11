@@ -23,14 +23,15 @@ defmodule Athena do
   unless this produces non-determinism, in which case it will try the next pair. 
   The learning will continue until the score of the best possible merge falls below the threshold.
   """
-	def learn(traceset, k, threshold \\ 1.0) do
+	def learn([{_,_} | _] = traceset, k, threshold) do
 
 		# Various things use Skel pools, so we must conenct to the cluster and
 		# start at least one worker.
 		:net_adm.world()
 		:timer.sleep(1000)
 		:sk_work_master.find()
-		peasants = Enum.map(:lists.seq(1,10), fn(_) -> :sk_peasant.start() end)
+		#		peasants = Enum.map(:lists.seq(1,10), fn(_) -> :sk_peasant.start() end)
+		peasants = Enum.map(:lists.seq(1,1), fn(_) -> :sk_peasant.start() end)
 
 		:io.format("Loading ~p traces...~n",[length(traceset)])
 
@@ -42,9 +43,7 @@ defmodule Athena do
 		
 		#FIXME add configurable merge selector
 
-		File.write("initial_efsm.dot",EFSM.to_dot(pta),[:write])
-		:os.cmd('dot -Tpng current_efsm.dot > current_efsm.png')
-		File.write("efsm_0.dot",EFSM.to_dot(pta),[:write])
+		update_current_pic(pta)
 
 		:io.format("Learning... [~p states]~n",[length(EFSM.get_states(pta))])
 		efsm = iterative(2,traceset,intraset,pta,k,threshold)
@@ -52,6 +51,15 @@ defmodule Athena do
 		#efsm = learn_step(pta,&Athena.KTails.selector(k,&1),[],intraset,traceset,threshold)
 		Enum.map(peasants, fn(p) -> send(p, :terminate) end)
 		efsm
+	end
+	def learn([],_,_) do
+		%{}
+	end
+	def learn(traces,k,thres) do
+		learn(Athena.make_trace_set(traces),k,thres)
+	end
+	def learn(traces,k) do
+		learn(traces,k,1.0)
 	end
 
 	defp iterative(idx,traceset,intraset,efsm,k,threshold) do
@@ -61,42 +69,43 @@ defmodule Athena do
 			t = get_trace(traceset,idx)
 			:io.format("Adding ~p~n",[t])
 			# update intraset
-			intraset = Map.put(intraset,idx,Athena.Intratrace.get_intras(t))
+			newintras = Athena.Intratrace.get_intras(t)
+			intraset = Map.put(intraset,idx,newintras)
 
-			{efsmp,_} = EFSM.add_traces([{idx,t}],efsm)
-			File.write("efsm_" <> to_string(idx) <>".dot",EFSM.to_dot(efsmp),[:write])
+			#:io.format("Intras:~n~p~n",[newintras])
+			
+
+			{efsmp,_} = EFSM.add_traces(efsm,[{idx,t}])
+			update_current_pic(efsmp)
 
 			{tracesetsubset,_} = Enum.split(traceset,idx)
 
-			cleanefsm = fix_non_dets(efsmp,tracesetsubset)
+			cleanefsm = fix_non_dets(efsmp,tracesetsubset,idx)
 			midefsm = learn_step(cleanefsm,&Athena.KTails.selector(k,&1),[],intraset,tracesetsubset,threshold)
 			newefsm = generalise_transitions(midefsm,tracesetsubset)
 
 			:io.format("Stabalized with ~p states.~n",[length(EFSM.get_states(newefsm))])
-			File.write("efsm_" <> to_string(idx) <>"a.dot",EFSM.to_dot(newefsm),[:write])
-			File.write("current_efsm.dot",EFSM.to_dot(newefsm,"labelloc=\"t\";\nlabel=\"EFSM " <> to_string(idx) <> "\";\n"),[:write])
-			:os.cmd('dot -Tpng current_efsm.dot > current_efsm_tmp.png')
-			:os.cmd('mv current_efsm_tmp.png current_efsm.png')
+			update_current_pic(newefsm,"labelloc=\"t\";\nlabel=\"EFSM " <> to_string(idx) <> "\";\n")
 
 			iterative(idx+1,traceset,intraset,newefsm,k,threshold)
 		end
 	end
 
-	defp fix_non_dets(efsm,[]) do
+	defp fix_non_dets(efsm,_,tn) when tn < 1 do
 		efsm
 	end
-	defp fix_non_dets(efsm,traceset) do
-		{previoustraceset,[{tn,t}]} = Enum.split(traceset,length(traceset)-1)
+	defp fix_non_dets(efsm,traceset,tn) do
+		t = get_trace(traceset,tn)
 		case EFSM.walk(efsm,t) do
 			{:ok,_end,_outputs,_path} ->
-				fix_non_dets(efsm,previoustraceset)
+				fix_non_dets(efsm,traceset,tn-1)
 			{:nondeterministic,{state,data},event,path,alts} ->
-				efsmp = fix_one_non_det(efsm,tn,t,traceset,previoustraceset,state,data,event,path,alts)
+				efsmp = fix_one_non_det(efsm,tn,t,traceset,state,data,event,path,alts)
 				if efsmp == efsm do
 					raise Athena.LearnException, message: "Failed to fix non determinism"
 				else
 					# Recurse to check for and further problems
-					fix_non_dets(efsmp,traceset)
+					fix_non_dets(efsmp,traceset,tn)
 				end
 			{:output_missmatch,_alts,{state,data},obsevent,path} ->
 				#:io.format("~p~n",[{:output_missmatch,_alts,{state,data},obsevent,path}])
@@ -134,25 +143,25 @@ defmodule Athena do
 																 end)
 				newefsm = Map.put(efsm,{state,nextstate},[l | filtertrans])
 				File.write("added.dot",EFSM.to_dot(efsm,"labelloc=\"t\";\nlabel=\"Non-Deterministic\";\n\"" <> to_string(state) <> "\" [style=filled,color=\"red\"]\n"),[:write])
-				fix_non_dets(newefsm,traceset)
-				#fix_one_non_det(newefsm,tn,t,traceset,previoustraceset,state,data,event,path)
+				fix_non_dets(newefsm,traceset,tn)
 			{:failed_after,_alts,{_state,_data},_obsevent,_path} ->
 				# Not sure why we ever get here, but its an "easy" fix...
-				:io.format("Why do I have to add this?~n~p~n",[t])
-				newefsm = EFSM.add_traces([{tn,t}],efsm)
-				fix_non_dets(newefsm,traceset)
+				{newefsm,_} = EFSM.add_traces(efsm,[{tn,t}])
+				fix_non_dets(newefsm,traceset,tn)
+			{:failed_after,_prefix,{_state,_data},_} ->
+				# Not sure why this is different from the other pattern?
+				{newefsm,_} = EFSM.add_traces(efsm,[{tn,t}])
+				fix_non_dets(newefsm,traceset,tn)
 			res ->
 				raise Athena.LearnException, message: "Unimplemented problem with resolving non-determinism\n" <> to_string(:io_lib.format("~p~nTrace: ~p~n",[res,t]))
 
 		end
 	end
 
-	defp fix_one_non_det(efsm,tn,trace,traceset,previoustraceset,state,data,event,path,alts) do
+	defp fix_one_non_det(efsm,tn,trace,traceset,state,data,event,path,alts) do
 		:io.format("Nondeterministic at ~p doing ~p~n~p~nData: ~p~nAlts:~n~p~n",[state,event,path,data,alts])
-		File.write("current_efsm.dot",EFSM.to_dot(efsm,"labelloc=\"t\";\nlabel=\"Non-Deterministic\";\n\"" <> to_string(state) <> "\" [style=filled,color=\"red\"]\n"),[:write])
-		:os.cmd('dot -Tpng current_efsm.dot > current_efsm_tmp.png')
-		:os.cmd('mv current_efsm_tmp.png current_efsm.png')
-		
+		update_current_pic(efsm,"labelloc=\"t\";\nlabel=\"Non-Deterministic\";\n\"" <> to_string(state) <> "\" [style=filled,color=\"red\"]\n")
+
 		ips = EFSM.bind_entries(event[:inputs],"i")
 		
 		alttranset = Enum.map(alts,fn(a) ->
@@ -175,34 +184,32 @@ defmodule Athena do
 				others = List.foldl(tl(alttranset), [], fn({{_,_},ts}, acc) -> acc ++ ts end)
 				case distinguish(efsm,traceset,t,otherts,event,state) do
 					nil ->
-						# Failed to distinguish - must split a previous state
-						if length(path) > 0 do
-							newstate = make_new_state_name(efsm,state)
-							damagedtraces = Enum.map(t[:sources],fn(%{trace: tnt}) -> tnt end)
-							{prefix,tail} = Enum.split(trace,length(path)-1)
-							:io.format("Prefix: ~p~nTail:~p~n",[prefix,tail])
-							{:ok,{previous,predata},_outputs,_path} = EFSM.walk(efsm,prefix)
-							:io.format("Predata: ~p~n",[predata])
-							[pretran] = EFSM.get_possible_trans(efsm,previous,predata,hd(tail))
-
-							# Strip out the offending traces and split them off to somewhere else
-							EFSM.remove_traces(efsm,damagedtraces)
-							|> EFSM.add_trans(previous,newstate,Map.put(pretran,:sources,[%{trace: tn,event: length(prefix)+1}]))
-							|> EFSM.add_tail(newstate,tn,tl(tail),length(prefix)+1)
-							|> elem(0)
-						else
-							raise "Need to split before the initial state?? Probably failed to resolve non-determinism on the first event. Nothing we can do from that!" <> to_string(:io_lib.format("~p",[path]))
-						end
+						:io.format("Failed to distinguish:~n~p~n~p~n~n",[t,others])
 						
+						# Failed to distinguish - must split a previous state
+						eset = List.foldl(alttranset, [], fn({{_from,_to},trans}, acc) -> acc ++ List.foldl(trans,[], fn(t, acc) -> acc ++ t[:sources] end) end)
+						#:io.format("Based on events:~n~p~n",[eset])
+						
+						#:io.format("New: ~p~n",[latest])
+						
+						# Split out the previous transition of *all* involved traces
+						#:io.format("Removing previous at ~p, traces below ~p~n",[state,tn])
+						newefsm = split_previous(efsm,tn,traceset,state,eset)
+						          |> EFSM.merge(state,state)
+											|> elem(0)
+						update_current_pic(newefsm)
+						newefsm
+
 					g ->
-						EFSM.add_trans(efsm,state,to1,Map.put(t,:guards,[g | t[:guards]]))
+						#EFSM.add_trans(efsm,state,to1,Map.put(t,:guards,[g | t[:guards]]))
+						EFSM.add_trans(efsm,state,to1,Map.put(t,:guards,ILP.simplify([g | t[:guards]])))
 						|> EFSM.remove_trans(state,to1,t)
 						|> (&List.foldl(tl(alttranset),
 														&1,
 														fn({{_from,to},ts},accefsm) ->
 																List.foldl(ts,accefsm,fn(tt,acc) -> 
-																													:io.format("Adding ~p -> ~p~n~p~n",[state,to,Map.put(tt,:guards,[ILP.simplify({:nt,g}) | tt[:guards]])])
-																													EFSM.add_trans(acc,state,to,Map.put(tt,:guards,[ILP.simplify({:nt,g}) | tt[:guards]])) 
+																													:io.format("Adding ~p -> ~p~n~p~n",[state,to,Map.put(tt,:guards,ILP.simplify([ILP.simplify({:nt,g}) | tt[:guards]]))])
+																													EFSM.add_trans(acc,state,to,Map.put(tt,:guards,ILP.simplify([ILP.simplify({:nt,g}) | tt[:guards]]))) 
 																													|> EFSM.remove_trans(state,to,tt)
 																											end)
 														end)).()
@@ -214,6 +221,101 @@ defmodule Athena do
 		end
 	end
 		
+	defp split_previous(efsm,tn,_traceset,_state,_eset) when tn <= 0 do
+		efsm
+	end
+	defp split_previous(efsm,tn,traceset,state,eset) do
+		trace = get_trace(traceset,tn)
+		# We must pick the latest event in the trace, incase a trace follows a loop a few times before branching
+		case Enum.filter(eset, fn(e) -> e[:trace] == tn end) do
+			[] ->
+				split_previous(efsm,tn-1,traceset,state,eset)
+			these ->
+				#:io.format("Picking max from ~p~n",[these])
+				latest = Enum.max_by(these, fn(s) -> s[:event] end)
+				
+				if latest[:event] > 1 do
+					#damagedtraces = Enum.map(t[:sources],fn(%{trace: tnt}) -> tnt end)
+					en = latest[:event]-1
+					{prefix,tail} = Enum.split(trace,en-1)
+					newstate = make_new_state_name(efsm,state)
+					
+					#:io.format("Creating ~p as target for ~p:~p~n",[newstate,tn,en])
+
+					#:io.format("Prefix: ~p~nTail:~p~n",[prefix,tail])
+					#{:ok,{previous,predata},_outputs,_path} = EFSM.walk(efsm,prefix)
+					{:ok, previous, predata} = false_walk(efsm,tn,prefix)
+					
+					#:io.format("Previous:~p~nPredata: ~p~nNext: ~p~n",[previous,predata,hd(tail)])
+					#pretran = case EFSM.get_possible_trans(efsm,previous,predata,hd(tail)) do
+					#						[pt] ->
+					#							pt
+					#						pts ->
+					#							case Enum.filter(pts, fn(t) -> Enum.any?(t[:sources], fn(s) -> s[:trace] == tn end) end) do
+					#								[pt] ->
+					#									pt
+					#								_ ->
+					#									raise "Could not find a unique previous transition!"
+					#							end
+					#					end
+					
+					newtran = Map.put(Label.event_to_label(hd(tail)),:sources,[%{trace: tn, event: en}])
+
+					# Strip out the offending traces and split them off to somewhere else
+					#:io.format("Should be removing ~p:~p from ~p~n",[tn, en, previous])
+					newefsm = EFSM.remove_tail_traces(efsm,previous,tn,en)
+					          |> EFSM.add_trans(previous,newstate,newtran)
+										|> EFSM.add_tail(newstate,tn,tl(tail),en+1)
+										|> elem(0)
+										|> EFSM.remove_orphaned_states
+#										|> EFSM.merge(previous,previous)
+#										|> elem(0)
+					update_current_pic(newefsm)
+					#:io.format("Recurse for ~p~n",[tn-1])
+					split_previous(newefsm,tn-1,traceset,state,eset)
+				else
+					# Cannot split before the initial state. Hopefully this will be solved by oe of the others!
+					split_previous(efsm,tn-1,traceset,state,eset)
+				end
+		end
+	end
+	
+	defp false_walk(efsm,tn,prefix) do
+		false_walk(efsm,tn,1,prefix,EFSM.get_start(efsm),%{})
+	end
+	defp false_walk(_,_,_,[],state,data) do
+		{:ok,state,data}
+	end
+	defp false_walk(efsm,tn,en,[p | prefix],state,data) do
+		trans = List.foldl(Map.keys(efsm), 
+													 [],
+													 fn({from,to},acc) -> 
+															 if from == state do
+																 List.foldl(efsm[{from,to}],
+																						acc,
+																						fn(t,acc) ->
+																								#:io.format("Seeking ~p in~n~p~n",[%{trace: tn, event: en},t[:sources]])
+																								if Enum.member?(t[:sources], %{trace: tn, event: en}) do
+																									[{from,to,t} | acc]
+																								else
+																									acc
+																								end
+																						end)
+															 else
+																 acc
+															 end
+													 end)
+		case trans do
+			[{from,to,t}] ->
+				ips = EFSM.bind_entries(p[:inputs],"i")
+				{_outputs,newdata} = Athena.Label.eval(t,ips,data)
+				false_walk(efsm,tn,en+1,prefix,to,newdata)
+			_ ->
+				{:error, "multiple or no possible transitions", tn, en, trans}
+		end
+	end
+
+
 	defp distinguish(efsm,traceset,t,otherts,event,state) do
 		:io.format("Distinguish ~p~nFrom ~p~n",[t,otherts])
 		posbinds = make_bind(efsm,traceset,t,state) 
@@ -318,7 +420,7 @@ defmodule Athena do
 			end
 		else
 			:io.format("Made non det...~n")
-			
+			#update_current_pic(newefsm)
 			#FIXME - don't give up! Use GP...
 			generalise_transitions_step(efsm,traceset,more)
 		end
@@ -415,9 +517,7 @@ defmodule Athena do
 					efsm
 				else
 					try do
-						File.write("current_efsm.dot",EFSM.to_dot(efsm,"labelloc=\"t\";\nlabel=\"EFSM " <> to_string(length(traceset)) <> "\";\n\"" <> to_string(s1) <> "\" [style=filled,color=\"blue\"]\n\"" <> to_string(s2) <> "\" [style=filled,color=\"blue\"]\n"),[:write])
-						:os.cmd('dot -Tpng current_efsm.dot > current_efsm_tmp.png')
-						:os.cmd('mv current_efsm_tmp.png current_efsm.png')
+						update_current_pic(efsm,"labelloc=\"t\";\nlabel=\"EFSM " <> to_string(length(traceset)) <> "\";\n\"" <> to_string(s1) <> "\" [style=filled,color=\"blue\"]\n\"" <> to_string(s2) <> "\" [style=filled,color=\"blue\"]\n")
 
 						:io.format("Merging... ")
 						{newefsm,merges} = EFSM.merge(efsm,s1,s2)
@@ -439,9 +539,7 @@ defmodule Athena do
 								
 								#:io.format("Now ~p states~n",[length(EFSM.get_states(newnewefsm))])
 								
-								File.write("current_efsm.dot",EFSM.to_dot(newnewefsm,"labelloc=\"t\";\nlabel=\"EFSM " <> to_string(length(traceset)) <> "\";\n"),[:write])
-								:os.cmd('dot -Tpng current_efsm.dot > current_efsm_tmp.png')
-								:os.cmd('mv current_efsm_tmp.png current_efsm.png')
+								update_current_pic(newnewefsm,"labelloc=\"t\";\nlabel=\"EFSM " <> to_string(length(traceset)) <> "\";\n")
 								
 								:io.format("Checking...")
 								case EFSM.check_traces(newnewefsm,traceset) do
@@ -493,11 +591,14 @@ defmodule Athena do
 	end
 
 	defp apply_inters(efsm,intraset,traceset,interesting,skips) do
-		case filter_inters(Athena.Intertrace.get_inters(efsm,traceset,intraset,interesting), skips) do
+		inters = Athena.Intertrace.get_inters(efsm,traceset,intraset,interesting)
+		#:io.format("Interesting: ~p~nIntraset:~n~p~n~nUnfiltered inters:~n~p~n",[interesting,intraset,inters])
+		case filter_inters(inters, skips) do
 			[] ->
+				:io.format("No inters!~n")
 				efsm
 			inters ->
-				:io.format("Inters <~p>~n",[length(inters)])
+				:io.format("Inters <~p>~n~p~n",[length(inters),inters])
 				possible = :skel.do([{:pool,
 													[fn(i) -> {i,InterMerge.one_inter(efsm,i,traceset)}  end],
 													{:max,length(inters)}
@@ -510,25 +611,26 @@ defmodule Athena do
 						efsm
 					pscores ->
 						:io.format("Scores:~n")
-						Enum.map(pscores,fn({score,_efsm,inter}) -> :io.format("~p: ~p~n",[score,inter]) end)
-						{_score,best,bestinter} = hd(pscores)
+						Enum.map(pscores,fn({score,_efsm,inter}) -> :io.format("~p,~p: ~p~n",[score,elem(elem(inter,2),1)[:content],elem(elem(inter,3),1)[:content]]) end)
+						{bscore,best,bestinter} = hd(pscores)
 						#:io.format("Best: ~p~nMade From: ~p~n",[_score,bestinter])
 						try do
 							if best == efsm do
 								:io.format("Hmmm, no improvement...")
 								efsm
 							else
-								File.write("current_efsm.dot",EFSM.to_dot(best),[:write])
-								:os.cmd('dot -Tpng current_efsm.dot > current_efsm_tmp.png')
-								:os.cmd('mv current_efsm_tmp.png current_efsm.png')
-								apply_inters(best,intraset,traceset,interesting,[bestinter | skips])
+								if bscore > EFSM.complexity(efsm) do
+									:io.format("Hmmm, worse than the original...")
+									efsm
+								else
+									update_current_pic(best)
+									apply_inters(best,intraset,traceset,interesting,[bestinter | skips])
+								end
 							end
 						rescue
 							_e in Athena.LearnException ->
 								:io.format("That merge failed...~n~p~n",[Exception.message(_e)])
-								File.write("current_efsm.dot",EFSM.to_dot(best),[:write])
-								:os.cmd('dot -Tpng current_efsm.dot > current_efsm_tmp.png')
-								:os.cmd('mv current_efsm_tmp.png current_efsm.png')
+								update_current_pic(best)
 								best
 						end
 				end
@@ -542,8 +644,13 @@ defmodule Athena do
 
 	@spec get_trace(traceset,integer) :: trace
 	def get_trace(traceset,idx) do
-		{_,v} = Enum.find(traceset,fn({n,_}) -> n == idx end)
-		v
+		case Enum.find(traceset,fn({n,_}) -> n == idx end) do
+			{_,v} -> 
+				v
+			nil ->
+				:io.format("Tn: ~p~n~p~n",[idx,traceset])
+				raise "Asked for a trace thats not in the trace set..."
+		end
 	end
 
 	# If the data contains contradictory values for the target where everything else is identical 
@@ -558,6 +665,23 @@ defmodule Athena do
 																					Enum.all?(Map.keys(a),fn(k) -> (k == target) or (a[k] == b[k]) end)
 																			end)
 									 end)
+	end
+
+	defp update_current_pic(efsm) do
+		update_current_pic(efsm,"")
+	end
+	defp update_current_pic(efsm, prefix) do
+		num = case :erlang.get(:efsm_number) do
+						:undefined -> 
+							0
+						n ->
+							n
+					end
+		File.write("efsm" <> to_string(num) <> ".dot",EFSM.to_dot(efsm,prefix),[:write])
+		:erlang.put(:efsm_number,num+1)
+		File.write("current_efsm.dot",EFSM.to_dot(efsm,prefix),[:write])
+		:os.cmd('dot -Tpng current_efsm.dot > current_efsm_tmp.png')
+		:os.cmd('mv current_efsm_tmp.png current_efsm.png')
 	end
 
 end

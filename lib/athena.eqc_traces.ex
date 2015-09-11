@@ -1,7 +1,10 @@
 defmodule Athena.EQCTraces do
 
 	def generate(prop) do
-		{:random, suite} = :eqc_suite.random(prop)
+		generate(prop,100)
+	end
+	def generate(prop,numtests) do
+		{:random, suite} = :eqc_suite.random(:eqc.numtests(numtests,prop))
 		traces = make_traces(suite)
 	end
 

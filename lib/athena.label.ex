@@ -66,6 +66,7 @@ defmodule Athena.Label do
   """
 	@spec subsumes?(t,t) :: boolean
 	def subsumes?(l1,l2) do
+#		:io.format("Subsumes? ~n~p~n~p~n",[l1,l2])
 		if l1[:label] == l2[:label] do
 			if not Enum.any?(l1[:outputs],fn(g) -> 
 																				Enum.any?(l2[:outputs],&conflicts?(g,&1)) 
@@ -75,9 +76,11 @@ defmodule Athena.Label do
 																				 Enum.any?(l2[:updates],&conflicts?(g,&1)) 
 																		 end)
 				else
+	#				:io.format("guard conflict~n")
 					false
 				end
 			else
+	#				:io.format("OP conflict~n")
 				false
 			end
 		else
@@ -86,6 +89,10 @@ defmodule Athena.Label do
 	end
 
 	defp conflicts?({:assign,tgt,{:v,_}},{:assign,tgt,{:lit,_}}) do
+		# Special exclusions - this isn't truely a subsumption, but its not a conflict for athena...
+		false
+	end
+	defp conflicts?({:assign,tgt,{:lit,_}},{:assign,tgt,{:v,_}}) do
 		# Special exclusions - this isn't truely a subsumption, but its not a conflict for athena...
 		false
 	end
@@ -115,7 +122,8 @@ defmodule Athena.Label do
 		false
 	end
 	# Anything that isn't an assignment definately conflicts...
-	defp conflicts?(_,_) do
+	defp conflicts?(_a,_b) do
+		:io.format("Conflict:~n~p~n~p~n~n",[_a,_b])
 		true
 	end
 end

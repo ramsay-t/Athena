@@ -89,6 +89,8 @@ defmodule Athena.Intertrace do
 																			# Check I/O directions match
 																			# and IO element numbers match
 																			# i.e. both have to reference input 1 or output 3
+																			:io.format("???? ~n~p~n~p~n~n",[intra,i2])
+
 																			if elem(intra[:fst],1) == elem(i2[:fst],1)
 																			and elem(intra[:snd],1) == elem(i2[:snd],1) 
 																			and elem(intra[:fst],2) == elem(i2[:fst],2)

@@ -1,0 +1,24 @@
+[
+[
+    {"label":"f","inputs":[],"outputs":["1"]}
+    ,{"label":"g","inputs":["1"],"outputs":[]}
+    ,{"label":"f","inputs":[],"outputs":["1"]}
+    ,{"label":"x","inputs":[],"outputs":[]}
+]
+,[
+    {"label":"f","inputs":[],"outputs":["1"]}
+    ,{"label":"g","inputs":["3"],"outputs":[]}
+]
+,[
+    {"label":"f","inputs":[],"outputs":["1"]}
+    ,{"label":"g","inputs":["2"],"outputs":[]}
+    ,{"label":"f","inputs":[],"outputs":["1"]}
+    ,{"label":"x","inputs":[],"outputs":[]}
+]
+,[
+    {"label":"f","inputs":[],"outputs":["1"]}
+    ,{"label":"g","inputs":["3"],"outputs":[]}
+    ,{"label":"f","inputs":[],"outputs":["2"]}
+    ,{"label":"y","inputs":[],"outputs":[]}
+]
+]

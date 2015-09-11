@@ -12,5 +12,9 @@
     ,{"label":"browse","inputs":["secret","k=cde"],"outputs":["secret"]}
     ,{"label":"browse","inputs":["open"],"outputs":["open"]}
     ,{"label":"browse","inputs":["secret","k=cde"],"outputs":["secret"]}
+    ,{"label":"browse","inputs":["open"],"outputs":["open"]}
+    ,{"label":"browse","inputs":["secret","k=cde"],"outputs":["secret"]}
+    ,{"label":"browse","inputs":["secret","k=cde"],"outputs":["secret"]}
+    ,{"label":"browse","inputs":["secret","k=cde"],"outputs":["secret"]}
 ]
 ]

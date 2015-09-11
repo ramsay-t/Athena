@@ -37,6 +37,9 @@
     ,{"label":"login","inputs":["chloe"],"outputs":["key=xyz;session=ok;"]}
     ,{"label":"browse","inputs":["open"],"outputs":["open"]}
     ,{"label":"browse","inputs":["secret","k=abc"],"outputs":["{error,access_denied}"]}
+    ,{"label":"browse","inputs":["secret","k=fff"],"outputs":["{error,access_denied}"]}
+    ,{"label":"browse","inputs":["secret","k=xyz"],"outputs":["secret"]}
+    ,{"label":"browse","inputs":["secret","k=xyz"],"outputs":["secret"]}
     ,{"label":"browse","inputs":["secret","k=xyz"],"outputs":["secret"]}
 ],
 [
