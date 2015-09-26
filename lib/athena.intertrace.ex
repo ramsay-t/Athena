@@ -21,17 +21,36 @@ defmodule Athena.Intertrace do
 	def get_inters(efsm,traceset,intras,interesting_traces) do
 		# Get sets of intras for which the start states match something interesting
 		keys = Map.keys(efsm)
-		firsts = :skel.do([{:pool,
+		firsts = :skel.do([{:farm,
 												[fn({from,to}) -> {from,find_firsts(efsm[{from,to}],intras,interesting_traces)} end],
-												{:max,length(keys)}}],
+												length(keys)}],
 											keys)
+										 
+		# There can be multiple entries for one state, since it might exist as {"1","2"} and {"1","3"}, both producing "1"
 
-     Enum.concat(:skel.do([{:pool,
+		firstset = List.foldl(firsts,
+											 %{},
+											 fn({state,content},acc) ->
+													 case acc[state] do
+														 nil ->
+															 Map.put(acc,state,content)
+														 cc ->
+															 Map.put(acc,state,cc ++ content)
+													 end
+											 end)
+		firsts = List.foldl(Map.keys(firstset),
+																 [],
+																 fn(s,acc) ->
+																		 acc ++ [{s,firstset[s]}]
+																 end)
+
+
+     Enum.concat(:skel.do([{:farm,
 														[fn({fst,intras}) -> 
 																 matches = check_snds(efsm,traceset,intras)
 																 Enum.map(matches, fn({snd,i1,i2}) -> {fst,snd,i1,i2} end)
 														 end],
-														{:max,length(firsts)}}],
+														length(firsts)}],
 													firsts))
 		
 	end
@@ -73,51 +92,66 @@ defmodule Athena.Intertrace do
 	defp check_snds(efsm,traceset,[{tn,intra} | intras]) do
 		start = Athena.EFSM.get_start(efsm)
 		slice1 = Enum.slice(Athena.get_trace(traceset,tn),0,elem(intra[:snd],0)-1)
-		hits = case Athena.EFSM.walk(efsm,slice1,{start,%{}}) do
-						 {:ok,{es1,_},_,_} -> 
-							 List.foldl(intras,
-													[],
-													fn({tn2,i2},acc) ->
-															# Exclude matches from the same trace, which can occur in loops etc.
-															# We want confirmation from multiple traces
-															if tn2 != tn do
-																# Check end states match
-																slice2 = Enum.slice(Athena.get_trace(traceset,tn2),0,elem(i2[:snd],0)-1)
-																case Athena.EFSM.walk(efsm,slice2,{start,%{}}) do
-																	{:ok,{es2,_},_,_} -> 
-																		if es1 == es2 do
-																			# Check I/O directions match
-																			# and IO element numbers match
-																			# i.e. both have to reference input 1 or output 3
-																			:io.format("???? ~n~p~n~p~n~n",[intra,i2])
-
-																			if elem(intra[:fst],1) == elem(i2[:fst],1)
-																			and elem(intra[:snd],1) == elem(i2[:snd],1) 
-																			and elem(intra[:fst],2) == elem(i2[:fst],2)
-																			and elem(intra[:snd],2) == elem(i2[:snd],2) 
-																			and intra[:content] != i2[:content] 
-																			do
-																				[ {es1,{tn,intra},{tn2,i2}} | acc]
-																			else
+		try do
+			hits = case Athena.EFSM.forced_walk(efsm,tn,slice1) do
+							 {:ok,es1,_data1} -> 
+								 List.foldl(intras,
+														[],
+														fn({tn2,i2},acc) ->
+																# Exclude matches from the same trace, which can occur in loops etc.
+																# We want confirmation from multiple traces
+																if tn2 != tn do
+																	# Check end states match
+																	slice2 = Enum.slice(Athena.get_trace(traceset,tn2),0,elem(i2[:snd],0)-1)
+																	try do
+																		case Athena.EFSM.forced_walk(efsm,tn2,slice2) do
+																			{:ok,es2,_data2} -> 
+																				if es1 == es2 do
+																					# Check I/O directions match
+																					# and IO element numbers match
+																					# i.e. both have to reference input 1 or output 3
+																					if elem(intra[:fst],1) == elem(i2[:fst],1)
+																					and elem(intra[:snd],1) == elem(i2[:snd],1) 
+																					and elem(intra[:fst],2) == elem(i2[:fst],2)
+																					and elem(intra[:snd],2) == elem(i2[:snd],2) 
+																					and intra[:content] != i2[:content] 
+																					do
+																						[ {es1,{tn,intra},{tn2,i2}} | acc]
+																					else
+																						acc
+																					end
+																				else
+																					acc
+																				end
+																			res ->
+	  		  															#raise Athena.LearnException, message: "Invalid trace in the EFSM?? " <> to_string(:io_lib.format("~p <<~p>>",[slice2,res]))
+																				#:io.format("Failed to check ~p~n~p~n~n",[i2,res])
 																				acc
-																			end
-																		else
-																			acc
 																		end
-																	res ->
-	  		  													#raise Athena.LearnException, message: "Invalid trace in the EFSM?? " <> to_string(:io_lib.format("~p <<~p>>",[slice2,res]))
-																		acc
+																		rescue
+																			e ->
+																			# This can fail if it violates data constraints...
+																			# FIXME: should we override that?
+																			#:io.format("Failed to Forced Walk:~n~p~n~p~n~p~n~n",[slice2,Athena.EFSM.to_dot(efsm),e])
+																			acc
+																	end
+																else
+																	acc
 																end
-															else
-																acc
-															end
-													end)
-						 res ->
-							 #raise Athena.LearnException, message: "Invalid trace in the EFSM?? " <> to_string(:io_lib.format("~p <<~p>>",[slice1,res]))
-							 # There is non determinism, this just means we can't check this trace because we can't reach the second point
-							 []
-					 end
-		hits ++ check_snds(efsm,traceset,intras)
+														end)
+							 res ->
+								 #:io.format("Failed to check ~p~n~p~n~n",[intra,res])
+								 #raise Athena.LearnException, message: "Invalid trace in the EFSM?? " <> to_string(:io_lib.format("~p <<~p>>",[slice1,res]))
+								 # There is non determinism, this just means we can't check this trace because we can't reach the second point
+								 []
+						 end
+			hits ++ check_snds(efsm,traceset,intras)
+			rescue
+				_ ->
+				:io.format("Failed to Forced Walk:~n~p~n~p~n~n",[slice1,Athena.EFSM.to_dot(efsm)])
+				check_snds(efsm,traceset,intras)
+		end
+
 	end
 
 end 

@@ -315,8 +315,9 @@ defmodule Athena.EFSM do
 	end
 
 	def merge(efsm,s1,s2,ignore) do
-		:io.format("Merging ~p and ~p~n",[s1,s2])
+		#:io.format("Merging ~p and ~p~n",[s1,s2])
 		newname = if s1 == s2 do s1 else to_string(s1) <> "," <> to_string(s2) end
+		#newname = if s1 == "0" or s2 == "0" do "0" else get_next_state_name(efsm)
 		# Replace old elements of the transition matrix with the new state
 		{newefsm,alltrans} = List.foldl(Map.keys(efsm),
 												{%{},[]},
@@ -652,5 +653,47 @@ defmodule Athena.EFSM do
 									 end
 							 end)
 	end
+
+	def forced_walk(efsm,tn,prefix) do
+		forced_walk(efsm,tn,1,prefix,get_start(efsm),%{})
+	end
+	def forced_walk(_,_,_,[],state,data) do
+		{:ok,state,data}
+	end
+	def forced_walk(efsm,tn,en,[p | prefix],state,data) do
+		trans = List.foldl(Map.keys(efsm), 
+													 [],
+													 fn({from,to},acc) -> 
+															 if from == state do
+																 List.foldl(efsm[{from,to}],
+																						acc,
+																						fn(t,acc) ->
+																								#:io.format("Seeking ~p in~n~p~n",[%{trace: tn, event: en},t[:sources]])
+																								if Enum.member?(t[:sources], %{trace: tn, event: en}) do
+																									[{from,to,t} | acc]
+																								else
+																									acc
+																								end
+																						end)
+															 else
+																 acc
+															 end
+													 end)
+		case trans do
+			[{from,to,t}] ->
+				ips = bind_entries(p[:inputs],"i")
+				case Athena.Label.eval(t,ips,data) do
+					{_outputs,newdata} ->
+						forced_walk(efsm,tn,en+1,prefix,to,newdata)
+					failure ->
+						#:io.format("Failed to make transition:~p~nData: ~p~nInputs: ~p~n~p~n",[t,data,ips,failure])
+						{:error,"Cannot follow transition",tn,en,trans}
+				end
+			_ ->
+				{:error, "multiple or no possible transitions", tn, en, trans}
+		end
+	end
+
+
 
 end

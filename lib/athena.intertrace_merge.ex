@@ -1,31 +1,118 @@
 defmodule Athena.IntertraceMerge do
 	alias Athena.EFSM, as: EFSM
 
+	def inter_recurse(efsm,inter,traceset,intraset,interesting,skips) do
+		#:io.format("Applying ~p~nSkips: ~p~n~n",[inter,skips])
+		case one_inter(efsm,inter,traceset) do
+			nil ->
+				:io.format("Inter application failed~n")
+				nil
+			newefsm ->
+				unfilteredinters = Athena.Intertrace.get_inters(newefsm,traceset,intraset,interesting)
+				#:io.format("Interesting: ~p~nIntraset:~n~p~n~nUnfiltered inters:~n~p~n",[interesting,intraset,inters])
+				case filter_inters(unfilteredinters, [inter | skips]) do
+					[] ->
+						:io.format("No more inters.~n")
+						newefsm
+					inters ->
+						:io.format("SKIPS: ~p FILTERLENGTH: ~p~n",[length(skips)+1,length(inters)])
+						#:io.format("From ~n~p~nSub-Inters <~p>~n~p~n",[inter,length(inters),inters])
+						# This mustn't use the :pool skeleton because it is already holding a worker, so
+						# it would just fill all the workers each waiting on its own children until it
+						# blocked waiting for a free worker, which would never happen...
+						#:io.format("Spawning ~p child processes...~n",[length(inters)])
+						possible = :skel.do([{:farm,
+																	[fn(i) -> {i,inter_recurse(newefsm,i,traceset,intraset,interesting,[inter | skips])}  end],
+																	length(inters)
+																}],
+																inters)
+            :io.format("Returning from ~p child processes~n",[length(inters)])
+						best = pick_efsm(newefsm,possible,traceset)
+				end
+		end
+	end
+
+	defp filter_inters([],_skips) do
+		[]
+	end
+	defp filter_inters([ i | inters],skips) do
+		if Enum.any?(skips, &inter_match(i,&1)) do
+			filter_inters(inters,skips)
+		else
+			[i | filter_inters(inters,skips)]
+		end
+	end
+
+	defp inter_match({s1,s2,{_tn1,intra1},{_tn2,intra2}},{subs1,subs2,{_subtn1,subintra1},{_subtn2,subintra2}}) do
+		s1 == subs1
+		and s2 == subs2
+		and intra1[:content] == subintra1[:content]
+		and intra2[:content] == subintra2[:content]
+		and elem(intra1[:fst],1) == elem(subintra1[:fst],1)
+		and elem(intra2[:fst],1) == elem(subintra2[:fst],1)
+		and elem(intra1[:fst],2) == elem(subintra1[:fst],2)
+		and elem(intra2[:fst],2) == elem(subintra2[:fst],2)
+		and elem(intra1[:snd],1) == elem(subintra1[:snd],1)
+		and elem(intra2[:snd],1) == elem(subintra2[:snd],1)
+		and elem(intra1[:snd],2) == elem(subintra1[:snd],2)
+		and elem(intra2[:snd],2) == elem(subintra2[:snd],2)
+	end
+
+	def pick_efsm(orig,possible,traceset) do
+		# Filter failed merges - these become nil
+		# Then sort by the (crude) complexity measure, aiming for the lowest score...									 
+		case :lists.sort(Enum.map(Enum.filter(possible, 
+																					fn({_i,p}) -> 
+																							try do
+																								p != nil and EFSM.traces_ok?(p,traceset)
+																								rescue
+																									_e in Athena.LearnException ->
+																									false
+																							end
+																					end), 
+																	 fn({i,p}) -> 
+																			 {EFSM.complexity(p), p, i} 
+																	 end)) do
+			[] ->
+				# Everything failed...
+				:io.format("All inters failed.~n")
+				orig
+			pscores ->
+				:io.format("Scores:~n")
+				Enum.map(pscores,fn({score,_efsm,inter}) -> :io.format("~p,~p: ~p~n",[score,elem(elem(inter,2),1)[:content],elem(elem(inter,3),1)[:content]]) end)
+				{bscore,best,bestinter} = hd(pscores)
+				#:io.format("Best: ~p~nMade From: ~p~n",[_score,bestinter])
+				if best == orig do
+					:io.format("No improvement...~n")
+					orig
+				else
+					oscore = EFSM.complexity(orig)
+					if bscore > oscore do
+						:io.format("Worse than the original (~p from ~p)...~n",[bscore,oscore])
+						orig
+					else
+						:io.format("Improved from complexity ~p to complexity ~p~n",[oscore,bscore])
+						#apply_inters(best,intraset,traceset,interesting,[bestinter | skips])
+						best
+					end
+				end
+		end
+	end
+		
 	def one_inter(efsm, inter, traceset) do
+	#	:io.format("Applying ~p~n",[inter])
 		try do
 			{efsmp,vname} = fix_first(efsm,inter,traceset)
-			
 			efsmpp = fix_second(efsmp,inter,vname,traceset)
-			#efsmpp = efsmp
-
 			{s1,s2,_,_} = inter
 
-			newefsm = EFSM.merge(efsmpp,s1,s1)
-			          |> elem(0)
-								|> EFSM.merge(s2,s2)
-								|> elem(0)
-
-			# Check we didn't break anything...
-			if EFSM.traces_ok?(newefsm,traceset) do
-				:io.format("WORKED! Applying ~p~n~p~n~n",[inter,EFSM.to_dot(newefsm)])
-				newefsm
-			else
-				:io.format("FAILED Applying ~p~n~p~n",[inter,EFSM.to_dot(newefsm)])
-				#:io.format("FAILED Applying ~p~n",[inter])
-				raise Athena.LearnException, message: "Failed check"
-			end
+			EFSM.merge(efsmpp,s1,s1)
+			|> elem(0)
+			|> EFSM.merge(s2,s2)
+			|> elem(0)
 			rescue
-				_e in Athena.LearnException ->
+				e ->
+				:io.format("INTER ERROR: ~p~n",[e])
 				nil
 		end
 	end

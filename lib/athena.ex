@@ -31,7 +31,7 @@ defmodule Athena do
 		:timer.sleep(1000)
 		:sk_work_master.find()
 		#		peasants = Enum.map(:lists.seq(1,10), fn(_) -> :sk_peasant.start() end)
-		peasants = Enum.map(:lists.seq(1,1), fn(_) -> :sk_peasant.start() end)
+		peasants = Enum.map(:lists.seq(1,10), fn(_) -> :sk_peasant.start() end)
 
 		:io.format("Loading ~p traces...~n",[length(traceset)])
 
@@ -39,7 +39,7 @@ defmodule Athena do
 		pta = EFSM.build_pta([hd(traceset)])
 		#:io.format("Finding intra-trace dependencies...~n")
 		intraset = Athena.Intratrace.get_intra_set([hd(traceset)])
-		#:io.format("Intraset: ~n~p~n",[intraset])
+		:io.format("Intraset: ~n~p~n",[intraset])
 		
 		#FIXME add configurable merge selector
 
@@ -72,7 +72,7 @@ defmodule Athena do
 			newintras = Athena.Intratrace.get_intras(t)
 			intraset = Map.put(intraset,idx,newintras)
 
-			#:io.format("Intras:~n~p~n",[newintras])
+			:io.format("Intras:~n~p~n",[newintras])
 			
 
 			{efsmp,_} = EFSM.add_traces(efsm,[{idx,t}])
@@ -244,7 +244,7 @@ defmodule Athena do
 
 					#:io.format("Prefix: ~p~nTail:~p~n",[prefix,tail])
 					#{:ok,{previous,predata},_outputs,_path} = EFSM.walk(efsm,prefix)
-					{:ok, previous, predata} = false_walk(efsm,tn,prefix)
+					{:ok, previous, predata} = EFSM.forced_walk(efsm,tn,prefix)
 					
 					#:io.format("Previous:~p~nPredata: ~p~nNext: ~p~n",[previous,predata,hd(tail)])
 					#pretran = case EFSM.get_possible_trans(efsm,previous,predata,hd(tail)) do
@@ -280,42 +280,6 @@ defmodule Athena do
 		end
 	end
 	
-	defp false_walk(efsm,tn,prefix) do
-		false_walk(efsm,tn,1,prefix,EFSM.get_start(efsm),%{})
-	end
-	defp false_walk(_,_,_,[],state,data) do
-		{:ok,state,data}
-	end
-	defp false_walk(efsm,tn,en,[p | prefix],state,data) do
-		trans = List.foldl(Map.keys(efsm), 
-													 [],
-													 fn({from,to},acc) -> 
-															 if from == state do
-																 List.foldl(efsm[{from,to}],
-																						acc,
-																						fn(t,acc) ->
-																								#:io.format("Seeking ~p in~n~p~n",[%{trace: tn, event: en},t[:sources]])
-																								if Enum.member?(t[:sources], %{trace: tn, event: en}) do
-																									[{from,to,t} | acc]
-																								else
-																									acc
-																								end
-																						end)
-															 else
-																 acc
-															 end
-													 end)
-		case trans do
-			[{from,to,t}] ->
-				ips = EFSM.bind_entries(p[:inputs],"i")
-				{_outputs,newdata} = Athena.Label.eval(t,ips,data)
-				false_walk(efsm,tn,en+1,prefix,to,newdata)
-			_ ->
-				{:error, "multiple or no possible transitions", tn, en, trans}
-		end
-	end
-
-
 	defp distinguish(efsm,traceset,t,otherts,event,state) do
 		:io.format("Distinguish ~p~nFrom ~p~n",[t,otherts])
 		posbinds = make_bind(efsm,traceset,t,state) 
@@ -517,7 +481,7 @@ defmodule Athena do
 					efsm
 				else
 					try do
-						update_current_pic(efsm,"labelloc=\"t\";\nlabel=\"EFSM " <> to_string(length(traceset)) <> "\";\n\"" <> to_string(s1) <> "\" [style=filled,color=\"blue\"]\n\"" <> to_string(s2) <> "\" [style=filled,color=\"blue\"]\n")
+						update_current_pic(efsm,"labelloc=\"t\";\nlabel=\"EFSM " <> to_string(length(traceset)) <> "\";\n\"" <> to_string(s1) <> "\" [style=filled,color=\"lightblue\"]\n\"" <> to_string(s2) <> "\" [style=filled,color=\"lightblue\"]\n")
 
 						:io.format("Merging... ")
 						{newefsm,merges} = EFSM.merge(efsm,s1,s2)
@@ -527,7 +491,10 @@ defmodule Athena do
 							_ ->
 								:io.format("~p merges~n",[length(merges)])
 								#if EFSM.traces_ok?(newefsm,traceset) do
-																
+												
+								update_current_pic(newefsm,"labelloc=\"t\";\nlabel=\"EFSM " <> to_string(length(traceset)) <> "\";\n")
+
+				
 								interesting = Athena.EFSMServer.get_interesting_traces(Enum.map(merges,fn({x,y}) -> x <> "," <> y end),newefsm)
 								:io.format("Interesting traces:~n~p~n",[interesting])
 								
@@ -564,76 +531,29 @@ defmodule Athena do
 		end
 	end
 
-	defp filter_inters([],_skips) do
-		[]
-	end
-	defp filter_inters([ i | inters],skips) do
-		if Enum.any?(skips, &inter_match(i,&1)) do
-			filter_inters(inters,skips)
-		else
-			[i | filter_inters(inters,skips)]
-		end
-	end
-
-	defp inter_match({s1,s2,{_tn1,intra1},{_tn2,intra2}},{subs1,subs2,{_subtn1,subintra1},{_subtn2,subintra2}}) do
-		s1 == subs1
-		and s2 == subs2
-		and intra1[:content] == subintra1[:content]
-		and intra2[:content] == subintra2[:content]
-		and elem(intra1[:fst],1) == elem(subintra1[:fst],1)
-		and elem(intra2[:fst],1) == elem(subintra2[:fst],1)
-		and elem(intra1[:fst],2) == elem(subintra1[:fst],2)
-		and elem(intra2[:fst],2) == elem(subintra2[:fst],2)
-		and elem(intra1[:snd],1) == elem(subintra1[:snd],1)
-		and elem(intra2[:snd],1) == elem(subintra2[:snd],1)
-		and elem(intra1[:snd],2) == elem(subintra1[:snd],2)
-		and elem(intra2[:snd],2) == elem(subintra2[:snd],2)
-	end
 
 	defp apply_inters(efsm,intraset,traceset,interesting,skips) do
-		inters = Athena.Intertrace.get_inters(efsm,traceset,intraset,interesting)
-		#:io.format("Interesting: ~p~nIntraset:~n~p~n~nUnfiltered inters:~n~p~n",[interesting,intraset,inters])
-		case filter_inters(inters, skips) do
+		case Athena.Intertrace.get_inters(efsm,traceset,intraset,interesting) do
 			[] ->
-				:io.format("No inters!~n")
+				:io.format("No inters.~n")
 				efsm
 			inters ->
-				:io.format("Inters <~p>~n~p~n",[length(inters),inters])
+				:io.format("Distributing ~p inter jobs~n",[length(inters)])
 				possible = :skel.do([{:pool,
-													[fn(i) -> {i,InterMerge.one_inter(efsm,i,traceset)}  end],
-													{:max,length(inters)}
-												}],
-												inters)
-				# Filter failed merges - these become nil
-				# Then sort by the (crude) complexity measure, aiming for the lowest score...									 
-				case :lists.sort(Enum.map(Enum.filter(possible, fn({_i,p}) -> p != nil end), fn({i,p}) -> {EFSM.complexity(p), p, i} end)) do
-					[] ->
-						efsm
-					pscores ->
-						:io.format("Scores:~n")
-						Enum.map(pscores,fn({score,_efsm,inter}) -> :io.format("~p,~p: ~p~n",[score,elem(elem(inter,2),1)[:content],elem(elem(inter,3),1)[:content]]) end)
-						{bscore,best,bestinter} = hd(pscores)
-						#:io.format("Best: ~p~nMade From: ~p~n",[_score,bestinter])
-						try do
-							if best == efsm do
-								:io.format("Hmmm, no improvement...")
-								efsm
-							else
-								if bscore > EFSM.complexity(efsm) do
-									:io.format("Hmmm, worse than the original...")
-									efsm
-								else
-									update_current_pic(best)
-									apply_inters(best,intraset,traceset,interesting,[bestinter | skips])
-								end
-							end
-						rescue
-							_e in Athena.LearnException ->
-								:io.format("That merge failed...~n~p~n",[Exception.message(_e)])
-								update_current_pic(best)
-								best
-						end
-				end
+															[fn(i) -> {i,InterMerge.inter_recurse(efsm,i,traceset,intraset,interesting,skips)}  end],
+															{:max,length(inters)}
+														}],
+														inters)
+				:io.format("Results: ~n")
+				Enum.map(possible,fn({i,p}) -> if p == nil do 
+																				 :io.format("~p~nNil~n~n",[i])
+																				 else
+																					 :io.format("~p~n~p~n~n",[i,EFSM.to_dot(p)]) 
+																			 end
+													end)
+				best = InterMerge.pick_efsm(efsm,possible,traceset)
+				update_current_pic(best)
+				best
 		end
 	end
 
@@ -680,8 +600,8 @@ defmodule Athena do
 		File.write("efsm" <> to_string(num) <> ".dot",EFSM.to_dot(efsm,prefix),[:write])
 		:erlang.put(:efsm_number,num+1)
 		File.write("current_efsm.dot",EFSM.to_dot(efsm,prefix),[:write])
-		:os.cmd('dot -Tpng current_efsm.dot > current_efsm_tmp.png')
-		:os.cmd('mv current_efsm_tmp.png current_efsm.png')
+		:os.cmd('dot -Tsvg current_efsm.dot > current_efsm_tmp.svg')
+		:os.cmd('mv current_efsm_tmp.svg current_efsm.svg')
 	end
 
 end
