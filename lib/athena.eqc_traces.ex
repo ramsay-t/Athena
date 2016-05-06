@@ -15,11 +15,17 @@ defmodule Athena.EQCTraces do
 		t = make_trace(trace,%{})
 		[t | make_traces(tests)]
 	end
-	def make_traces([[other,trace] | tests]) do
+	def make_traces([[_other,trace] | tests]) do
    	# I have no idea why some have different names...
-		#raise ArgumentError, message: "Don't know how to make a trace from " <> to_string(:lists.flatten(:io_lib.format("~p,~p",[other,trace])))
-		t = make_trace(trace,%{})
-		[t | make_traces(tests)]
+		make_traces([[:set,trace] | tests])
+	end
+	def make_traces([[trace] | tests] ) do
+   	# I have no idea why some have different formats...
+		make_traces([[:set,trace] | tests])
+	end
+	def make_traces([trace | tests] ) do
+   	# I have no idea why some have different formats...
+		make_traces([[:set,trace] | tests])
 	end
 
 	defp make_trace([],_data) do

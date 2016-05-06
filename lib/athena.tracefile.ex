@@ -10,6 +10,12 @@ defmodule Athena.Tracefile do
 		end
 	end
 
+	def load_PAutomaC_file(file) do
+		{:ok, content} = File.read(file)
+		[_head | lines] = String.split(content,"\n")
+		parse_PAutomaC(lines)
+	end
+
 	def load_mint_file(file) do
 		{:ok, content} = File.read(file)
 		lines = String.split(content,"\n")
@@ -71,5 +77,44 @@ defmodule Athena.Tracefile do
 				%{label: hd(items), inputs: tl(items), outputs: []}
 		end
 	end
+
+	defp parse_PAutomaC(lines) do
+		parse_PAutomaC(lines,[])
+	end
+
+	defp parse_PAutomaC([], res) do
+		res
+	end
+	defp parse_PAutomaC([l | lines], res) do
+		case String.split(l) do
+			["0"] ->
+				parse_PAutomaC(lines,res ++ [[]])
+			[] ->
+				parse_PAutomaC(lines,res)
+			[_count | items] ->
+				case parse_PAutomaC_line(items) do
+					[] ->
+						parse_PAutomaC(lines,res)
+					es ->
+						parse_PAutomaC(lines, res ++ [es])
+				end
+		end
+	end
+
+	defp parse_PAutomaC_line([]) do
+		[]
+	end
+	defp parse_PAutomaC_line([c | cs]) do
+		[%{label: "next", inputs: [c], outputs: []}, %{label: "now", inputs: [], outputs: [c]} | parse_PAutomaC_line(cs)]
+	end
+
+#	defp parse_PAutomaC_line([c]) do
+#		[%{label: "now", inputs: [], outputs: [c]}]
+#		[%{label: "symbol", inputs: [c], outputs: [c]}]
+#	end
+#	defp parse_PAutomaC_line([c,n | cs]) do
+#		[%{label: "symbol", inputs: [c], outputs: [c]} | parse_PAutomaC_line([n|cs])]
+#		[%{label: "now", inputs: [], outputs: [c]}, %{label: "next", inputs: [n], outputs: [n]} | parse_PAutomaC_line([n|cs])]
+#	end
 
 end

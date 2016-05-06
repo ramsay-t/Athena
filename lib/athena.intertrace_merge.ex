@@ -1,34 +1,96 @@
 defmodule Athena.IntertraceMerge do
 	alias Athena.EFSM, as: EFSM
 
-	def inter_recurse(efsm,inter,traceset,intraset,interesting,skips) do
-		#:io.format("Applying ~p~nSkips: ~p~n~n",[inter,skips])
-		case one_inter(efsm,inter,traceset) do
-			nil ->
-				:io.format("Inter application failed~n")
-				nil
-			newefsm ->
-				unfilteredinters = Athena.Intertrace.get_inters(newefsm,traceset,intraset,interesting)
+	def inter_recurse(e,traceset,intraset,interesting) when (not is_list(e)) do
+		inter_recurse(e,[{e,[]}],traceset,intraset,interesting,0)
+	end
+	def inter_recurse(orig,[],_traceset,_intraset,_interesting,_depth) do
+		# This is a bit meaningless...
+		orig
+	end
+	def inter_recurse(orig,efsmpairs,traceset,intraset,interesting,depth) do
+		# FIXME depth limited for now - no obvious stopping criteria?
+		if depth > 4 do
+			pick_efsm(orig,Enum.map(efsmpairs, fn({e,_s}) -> e end),traceset)
+		else 
+			:io.format("[~p] Exploring ~p possibilities...~n",[depth,length(efsmpairs)])
+			results = :skel.do([{:pool,
+													 [fn({e,skips}) -> inter_recurse_step(e,traceset,intraset,interesting,skips) end],
+													 {:max,length(efsmpairs)}
+												 }],
+												 efsmpairs)
+			#:io.format("results: ~n~p~n",[results])
+			# Results is now a list of lists of pairs of efsms and skip lists
+			# These need to be merged, so matching efsms are paired with the unioned sets of skips
+			# that make them - there is no point trying several permutations that end in the same place
+			finalmap = List.foldl(List.flatten(results),
+																 %{},
+																 fn({e,skips},acc) ->
+																		 case e do
+																			 nil ->
+																				 acc
+																			 _ ->
+																				 case EFSM.check_traces(e,traceset) do
+																					 :ok ->
+																						 #:io.format("    Ok~n")
+																						 case acc[e] do
+																							 nil ->
+																								 Map.put(acc,e,skips)
+																							 sp ->
+																								 Map.put(acc,e,:lists.usort(sp ++ skips))
+																						 end
+																					 {:nondeterministic,_,_,_,_} ->
+																						 #:io.format("    Non-det~n")
+																						 # Non-determinisim might be fixed by more inters
+																						 case acc[e] do
+																							 nil ->
+																								 Map.put(acc,e,skips)
+																							 sp ->
+																								 Map.put(acc,e,:lists.usort(sp ++ skips))
+																						 end
+																					 res ->
+																						 # Any other error is fatal!
+																						 #:io.format("    Failed.~n")
+																						 acc
+																				 end
+																		 end
+																 end)
+			#:io.format("Finalmap:~n~p~n",[finalmap])
+			finallist = List.foldl(Map.keys(finalmap),
+																 [],
+																 fn(e,acc) ->
+																		 [{e,finalmap[e]} | acc]
+																 end)
+			:io.format("Finished ~p possibilities~nMade ~p results~n",[length(efsmpairs),length(finallist)])
+			Enum.map(finallist, fn({e,s}) ->  
+															#Athena.update_current_pic(e)
+															:io.format("    ~p skips~n",[length(s)]) 
+													end)
+			#:io.format("Finallist:~n~p~n",[finallist])
+			if finallist == efsmpairs do
+				# No improvement, we are done!
+				pick_efsm(orig,Enum.map(finallist, fn({e,_s}) -> e end),traceset)
+			else
+				inter_recurse(orig,finallist,traceset,intraset,interesting,depth+1)
+			end
+		end
+	end
+
+	def inter_recurse_step(efsm,traceset,intraset,interesting,skips) do
+		unfilteredinters = Athena.Intertrace.get_inters(efsm,traceset,intraset,interesting)
+		case filter_inters(unfilteredinters, skips) do
+			[] ->
+				:io.format("No more inters.~n")
+				{efsm,skips}
+			inters ->
 				#:io.format("Interesting: ~p~nIntraset:~n~p~n~nUnfiltered inters:~n~p~n",[interesting,intraset,inters])
-				case filter_inters(unfilteredinters, [inter | skips]) do
-					[] ->
-						:io.format("No more inters.~n")
-						newefsm
-					inters ->
-						:io.format("SKIPS: ~p FILTERLENGTH: ~p~n",[length(skips)+1,length(inters)])
-						#:io.format("From ~n~p~nSub-Inters <~p>~n~p~n",[inter,length(inters),inters])
-						# This mustn't use the :pool skeleton because it is already holding a worker, so
-						# it would just fill all the workers each waiting on its own children until it
-						# blocked waiting for a free worker, which would never happen...
-						#:io.format("Spawning ~p child processes...~n",[length(inters)])
-						possible = :skel.do([{:farm,
-																	[fn(i) -> {i,inter_recurse(newefsm,i,traceset,intraset,interesting,[inter | skips])}  end],
-																	length(inters)
-																}],
-																inters)
-            :io.format("Returning from ~p child processes~n",[length(inters)])
-						best = pick_efsm(newefsm,possible,traceset)
-				end
+				# Apply all the inters concurrently and make a list of pairs of result new skips
+				:io.format("Applying ~p inters...~n",[length(inters)])
+				:skel.do([{:farm,
+									 [fn(i) -> {one_inter(efsm,i,traceset),[i | skips]} end],
+									 min(length(inters),10)
+								 }],
+								 inters)
 		end
 	end
 
@@ -62,7 +124,7 @@ defmodule Athena.IntertraceMerge do
 		# Filter failed merges - these become nil
 		# Then sort by the (crude) complexity measure, aiming for the lowest score...									 
 		case :lists.sort(Enum.map(Enum.filter(possible, 
-																					fn({_i,p}) -> 
+																					fn(p) -> 
 																							try do
 																								p != nil and EFSM.traces_ok?(p,traceset)
 																								rescue
@@ -70,17 +132,17 @@ defmodule Athena.IntertraceMerge do
 																									false
 																							end
 																					end), 
-																	 fn({i,p}) -> 
-																			 {EFSM.complexity(p), p, i} 
+																	 fn(p) -> 
+																			 {EFSM.complexity(p), p} 
 																	 end)) do
 			[] ->
 				# Everything failed...
 				:io.format("All inters failed.~n")
 				orig
 			pscores ->
-				:io.format("Scores:~n")
-				Enum.map(pscores,fn({score,_efsm,inter}) -> :io.format("~p,~p: ~p~n",[score,elem(elem(inter,2),1)[:content],elem(elem(inter,3),1)[:content]]) end)
-				{bscore,best,bestinter} = hd(pscores)
+				#:io.format("Scores:~n")
+				#Enum.map(pscores,fn({score,_efsm,inter}) -> :io.format("~p,~p: ~p~n",[score,elem(elem(inter,2),1)[:content],elem(elem(inter,3),1)[:content]]) end)
+				{bscore,best} = hd(pscores)
 				#:io.format("Best: ~p~nMade From: ~p~n",[_score,bestinter])
 				if best == orig do
 					:io.format("No improvement...~n")

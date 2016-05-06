@@ -1,0 +1,62 @@
+[
+[
+{"label":"open_file", "inputs":["tab"], "outputs":["tab"]}
+,{"label":"insert","inputs":["tab","a","0"], "outputs":["true"]}
+,{"label":"insert","inputs":["tab","b","1"], "outputs":["true"]}
+,{"label":"lookup","inputs":["tab","a"], "outputs":["1","0"]}
+,{"label":"lookup","inputs":["tab","b"], "outputs":["2","1"]}
+]
+,[
+{"label":"open_file", "inputs":["tab"], "outputs":["tab"]}
+,{"label":"insert","inputs":["tab","a","1"], "outputs":["true"]}
+,{"label":"insert","inputs":["tab","b","0"], "outputs":["true"]}
+,{"label":"lookup","inputs":["tab","a"], "outputs":["1","1"]}
+,{"label":"lookup","inputs":["tab","b"], "outputs":["2","0"]}
+]
+,[
+{"label":"open_file", "inputs":["tab"], "outputs":["tab"]}
+,{"label":"insert","inputs":["tab","b","0"], "outputs":["true"]}
+,{"label":"insert","inputs":["tab","a","1"], "outputs":["true"]}
+,{"label":"lookup","inputs":["tab","a"], "outputs":["1","1"]}
+,{"label":"lookup","inputs":["tab","b"], "outputs":["2","0"]}
+]
+,[
+{"label":"open_file", "inputs":["tab"], "outputs":["tab"]}
+,{"label":"insert","inputs":["tab","b","0"], "outputs":["true"]}
+,{"label":"insert","inputs":["tab","a","1"], "outputs":["true"]}
+,{"label":"lookup","inputs":["tab","b"], "outputs":["2","0"]}
+,{"label":"lookup","inputs":["tab","a"], "outputs":["1","1"]}
+]
+,[
+{"label":"open_file", "inputs":["tab"], "outputs":["tab"]}
+,{"label":"insert","inputs":["tab","b","6"], "outputs":["true"]}
+,{"label":"insert","inputs":["tab","a","1"], "outputs":["true"]}
+,{"label":"lookup","inputs":["tab","b"], "outputs":["2","6"]}
+,{"label":"lookup","inputs":["tab","a"], "outputs":["1","1"]}
+]
+,[
+{"label":"open_file", "inputs":["tab"], "outputs":["tab"]}
+,{"label":"insert","inputs":["tab","b","6"], "outputs":["true"]}
+,{"label":"lookup","inputs":["tab","b"], "outputs":["2","6"]}
+,{"label":"insert","inputs":["tab","a","1"], "outputs":["true"]}
+,{"label":"lookup","inputs":["tab","a"], "outputs":["1","1"]}
+]
+,[
+{"label":"open_file", "inputs":["tab"], "outputs":["tab"]}
+,{"label":"lookup","inputs":["tab","a"], "outputs":["1","[]"]}
+,{"label":"lookup","inputs":["tab","b"], "outputs":["2","[]"]}
+,{"label":"insert","inputs":["tab","a","1"], "outputs":["true"]}
+,{"label":"lookup","inputs":["tab","a"], "outputs":["1","1"]}
+,{"label":"insert","inputs":["tab","b","6"], "outputs":["true"]}
+,{"label":"lookup","inputs":["tab","b"], "outputs":["2","6"]}
+]
+,[
+{"label":"open_file", "inputs":["tab"], "outputs":["tab"]}
+,{"label":"lookup","inputs":["tab","b"], "outputs":["2","[]"]}
+,{"label":"lookup","inputs":["tab","a"], "outputs":["1","[]"]}
+,{"label":"insert","inputs":["tab","a","1"], "outputs":["true"]}
+,{"label":"lookup","inputs":["tab","a"], "outputs":["1","1"]}
+,{"label":"insert","inputs":["tab","b","6"], "outputs":["true"]}
+,{"label":"lookup","inputs":["tab","b"], "outputs":["2","6"]}
+]
+]

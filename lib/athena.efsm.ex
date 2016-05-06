@@ -249,6 +249,11 @@ defmodule Athena.EFSM do
 																	end
 														 )
 				bindos = bind_entries(e[:outputs],"o")
+				newbind = List.foldl(Map.keys(os),
+														 newbind,
+														 fn(k,acc) ->
+																 Map.put(acc,String.to_atom("rlast" <> Atom.to_string(k)),os[k])
+														 end)
 				if osstring == bindos do
 					walk_step(ts,outputs ++ [osstring],previous ++ [e],{to,newbind},path ++ [{start,to,tran}],efsm)
 				else
@@ -504,6 +509,7 @@ defmodule Athena.EFSM do
 		:ok
 	end
 	def check_traces(efsm,[t | more]) do
+		:io.format("Checking:~n~p~n",[t])
 		case walk(efsm,t) do
 			{:ok,{_,_},_,_} ->
 				check_traces(efsm,more)

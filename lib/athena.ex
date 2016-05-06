@@ -64,10 +64,18 @@ defmodule Athena do
 
 	defp iterative(idx,traceset,intraset,efsm,k,threshold) do
 		if idx > length(traceset) do
+			:io.format("[~p] Final... ",[length(traceset)])
+			case EFSM.check_traces(efsm,traceset) do
+				:ok ->
+					:io.format("OK!~n")
+				res ->
+					:io.format("Failed: ~p~n",[res])
+			end								
+			update_current_pic(efsm,"labelloc=\"t\";\nlabel=\"Stable EFSM\";\n")
 			efsm
 		else
 			t = get_trace(traceset,idx)
-			:io.format("Adding ~p~n",[t])
+			:io.format("Adding ~p:~n~p~n",[idx,t])
 			# update intraset
 			newintras = Athena.Intratrace.get_intras(t)
 			intraset = Map.put(intraset,idx,newintras)
@@ -79,16 +87,39 @@ defmodule Athena do
 			update_current_pic(efsmp)
 
 			{tracesetsubset,_} = Enum.split(traceset,idx)
-
 			cleanefsm = fix_non_dets(efsmp,tracesetsubset,idx)
+			:io.format("Clean... ")
+			case EFSM.check_traces(cleanefsm,traceset) do
+				:ok ->
+					:io.format("OK!~n")
+				res ->
+					:io.format("Failed: ~p~n",[res])
+			end								
 			midefsm = learn_step(cleanefsm,&Athena.KTails.selector(k,&1),[],intraset,tracesetsubset,threshold)
+			:io.format("Mid... ")
+			case EFSM.check_traces(midefsm,traceset) do
+				:ok ->
+					:io.format("OK!~n")
+				res ->
+					:io.format("Failed: ~p~n",[res])
+			end								
 			newefsm = generalise_transitions(midefsm,tracesetsubset)
-
+			:io.format("Generalised... ")
+			case EFSM.check_traces(newefsm,traceset) do
+				:ok ->
+					:io.format("OK!~n")
+				res ->
+					:io.format("Failed: ~p~n",[res])
+			end
 			:io.format("Stabalized with ~p states.~n",[length(EFSM.get_states(newefsm))])
-			update_current_pic(newefsm,"labelloc=\"t\";\nlabel=\"EFSM " <> to_string(idx) <> "\";\n")
-
+			update_current_pic(newefsm,"labelloc=\"t\";\nlabel=\"EFSM " <> to_string(idx) <> "\";\n")					
 			iterative(idx+1,traceset,intraset,newefsm,k,threshold)
+
 		end
+	end
+
+	defp fix_non_dets(efsm,traceset) do
+		fix_non_dets(efsm,traceset,length(traceset))
 	end
 
 	defp fix_non_dets(efsm,_,tn) when tn < 1 do
@@ -98,6 +129,7 @@ defmodule Athena do
 		t = get_trace(traceset,tn)
 		case EFSM.walk(efsm,t) do
 			{:ok,_end,_outputs,_path} ->
+				:io.format("No more non-dets in trace ~p...",[tn])
 				fix_non_dets(efsm,traceset,tn-1)
 			{:nondeterministic,{state,data},event,path,alts} ->
 				efsmp = fix_one_non_det(efsm,tn,t,traceset,state,data,event,path,alts)
@@ -108,7 +140,7 @@ defmodule Athena do
 					fix_non_dets(efsmp,traceset,tn)
 				end
 			{:output_missmatch,_alts,{state,data},obsevent,path} ->
-				#:io.format("~p~n",[{:output_missmatch,_alts,{state,data},obsevent,path}])
+				:io.format("~p~n",[{:output_missmatch,_alts,{state,data},obsevent,path}])
 				event = obsevent[:event]
 				l = Map.put(Label.event_to_label(event),:sources,[%{trace: tn, event: length(path)+1}])
 				ips = EFSM.bind_entries(event[:inputs],"i")
@@ -281,14 +313,15 @@ defmodule Athena do
 	end
 	
 	defp distinguish(efsm,traceset,t,otherts,event,state) do
-		:io.format("Distinguish ~p~nFrom ~p~n",[t,otherts])
+		:io.format("****************************~nDistinguish ~p~nFrom ~p~n",[t,otherts])
 		posbinds = make_bind(efsm,traceset,t,state) 
 		           |> Enum.map(&Map.put(&1,:possible,true))
+		#:io.format("Made binds for 1: ~p~n~nOr: ~n~p~nNow to make binds for~n~p~n",[posbinds, make_bind(efsm,traceset,t,state),otherts])
 		nonposbinds = List.foldl(otherts,[],fn(ts,acc) -> acc ++ make_bind(efsm,traceset,ts,state) end) 
 		              |> Enum.map(&Map.put(&1,:possible,false))
 		
 		binds = posbinds ++ nonposbinds
-		:io.format("Binds:~n~p~n",[binds])
+		#:io.format("Binds:~n~p~n",[binds])
 
 		if gp_sanity_check?(binds,:possible) do
 			:io.format("Passed sanity check...~n")
@@ -330,7 +363,7 @@ defmodule Athena do
 																					 t1,
 																					 fn(t2,acctran) ->
 																							 if acctran != t2 and acctran[:label] == t2[:label] do
-																								 #:io.format("Generalising~n~p~n~p~n~n",[acctran,t2])
+																								 :io.format("Generalising~n~p~n~p~n~n",[acctran,t2])
 																								 
 																								 #FIXME ILP is not implemented yet
 																								 #newos = ILP.generalise(acctran[:outputs] ++ t2[:outputs])
@@ -357,6 +390,7 @@ defmodule Athena do
 																										 updates: newus}
 
 																								 else 
+																									 :io.format("Should generalise ~p vs ~p~n",[acctran[:outputs],t2[:outputs]])
 																									 acctran
 																								 end
 																							 else
@@ -386,6 +420,7 @@ defmodule Athena do
 			:io.format("Made non det...~n")
 			#update_current_pic(newefsm)
 			#FIXME - don't give up! Use GP...
+			#:io.format("SHOULD TRY GP!!!!!~n")
 			generalise_transitions_step(efsm,traceset,more)
 		end
 	end
@@ -394,6 +429,7 @@ defmodule Athena do
 		Enum.map(t[:sources],
 						 fn(s) ->
 								 {prefix,tail} = Enum.split(get_trace(traceset,s[:trace]),s[:event]-1)
+								 :io.format("T:~p, E:~p ~n~p~nmakes~n~p~n~n",[s[:trace],s[:event],get_trace(traceset,s[:trace]),tail])
 								 event = hd(tail)
 								 data = case get_data(efsm,prefix,state) do
 													nil ->
@@ -402,6 +438,7 @@ defmodule Athena do
 													d ->
 														d
 												end
+								 :io.format("Got Data: ~p~n",[data])
 								 midbind = List.foldl(Enum.zip(:lists.seq(1,length(event[:inputs])),event[:inputs]),
 																					 data,
 																					 fn({idx,i},acc) ->
@@ -421,6 +458,7 @@ defmodule Athena do
 		if state == EFSM.get_start(efsm) do
 			%{}
 		else
+			#:io.format("WALKING ~p~n",[prefix])
 			case EFSM.walk(efsm,prefix) do
 				{:ok,{s,d},_,_} ->
 					if s == state do
@@ -435,6 +473,7 @@ defmodule Athena do
 						end
 					end
 				{:nondeterministic,{_state,_data},_event,path,_alts} ->
+					:io.format("NON-DET at ~p~n~p of ~p~n",[{_state,_data},_event,path])
 					case List.foldl(path,{[],[]},fn({from,to,tran},{bef,aft}) -> 
 																					 if from == state do
 																						 {bef,[tran]}
@@ -447,6 +486,7 @@ defmodule Athena do
 																					 end
 																	end) do
 						{prefix,[]} ->
+							:io.format("Yeah, whut?~n")
 							%{}
 						{shorter,_} ->
 							{newprefix,_} = Enum.split(prefix,length(shorter))
@@ -490,16 +530,26 @@ defmodule Athena do
 								raise Athena.LearnException, message: "No merges happened!"
 							_ ->
 								:io.format("~p merges~n",[length(merges)])
-								#if EFSM.traces_ok?(newefsm,traceset) do
-												
+
+
+#								try do
+#									:io.format("Fixing merge non-dets...")
+#									newefsm = fix_non_dets(newefsm,traceset)	
+#									rescue
+#										_e in Athena.LearnException ->
+#										# Failed to fix non-dets, but its worth trying update inference anyway, since that might be the answer...
+#										:io.format("Failed conventional resolution of non-dets~n")
+#								end
+
 								update_current_pic(newefsm,"labelloc=\"t\";\nlabel=\"EFSM " <> to_string(length(traceset)) <> "\";\n")
 
 				
 								interesting = Athena.EFSMServer.get_interesting_traces(Enum.map(merges,fn({x,y}) -> x <> "," <> y end),newefsm)
 								:io.format("Interesting traces:~n~p~n",[interesting])
 								
-								newnewefsm = apply_inters(newefsm,intraset,traceset,interesting,[]) 
+								#newnewefsm = apply_inters(newefsm,intraset,traceset,interesting,[]) 
 								#newnewefsm = newefsm
+								newnewefsm = InterMerge.inter_recurse(newefsm,traceset,intraset,interesting)
 								
 								
 								#FIXME GP improve guards?
@@ -507,7 +557,6 @@ defmodule Athena do
 								#:io.format("Now ~p states~n",[length(EFSM.get_states(newnewefsm))])
 								
 								update_current_pic(newnewefsm,"labelloc=\"t\";\nlabel=\"EFSM " <> to_string(length(traceset)) <> "\";\n")
-								
 								:io.format("Checking...")
 								case EFSM.check_traces(newnewefsm,traceset) do
 									:ok ->
@@ -587,10 +636,10 @@ defmodule Athena do
 									 end)
 	end
 
-	defp update_current_pic(efsm) do
+	def update_current_pic(efsm) do
 		update_current_pic(efsm,"")
 	end
-	defp update_current_pic(efsm, prefix) do
+	def update_current_pic(efsm, prefix) do
 		num = case :erlang.get(:efsm_number) do
 						:undefined -> 
 							0
