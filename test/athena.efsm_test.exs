@@ -201,31 +201,68 @@ defmodule Athena.EFSMTest do
 	end
 
 	test "Walk an EFSM" do
-		assert EFSM.walk(t1,{"0",%{}},efsm1) == {:ok,{"4",%{}},[%{}, %{o1: "50"}, %{o1: "100"}, %{o1: "coke"}],[{"0","1"},{"1","2"},{"2","3"},{"3","4"}]}
-		assert EFSM.walk(tbroken,{"0",%{}},efsm1) == {:output_missmatch, 
+		#assert EFSM.walk(efsm1,t1,{"0",%{}}) == {:ok,{"4",%{}},[%{}, %{o1: "50"}, %{o1: "100"}, %{o1: "coke"}],[{"0","1"},{"1","2"},{"2","3"},{"3","4"}]}
+		assert EFSM.walk(efsm1,t1,{"0",%{}}) == {:ok, {"4", %{rlasto1: "coke"}}, [%{}, %{o1: "50"}, %{o1: "100"}, %{o1: "coke"}],
+																						 [{"0", "1",
+																							 %{guards: [{:eq, {:v, :i1}, {:lit, "coke"}}], 
+																								 label: "select", 
+																								 outputs: [], 
+																								 sources: [%{event: 1, trace: 1}, %{event: 1, trace: 2}],
+																								 updates: []}},
+																							{"1", "2",
+																							 %{guards: [{:eq, {:v, :i1}, {:lit, "50"}}], 
+																								 label: "coin", 
+																								 outputs: [{:assign, :o1, {:lit, "50"}}], 
+																								 sources: [%{event: 2, trace: 1}],
+																								 updates: []}},
+																							{"2", "3",
+																							 %{guards: [{:eq, {:v, :i1}, {:lit, "50"}}], 
+																								 label: "coin", 
+																								 outputs: [{:assign, :o1, {:lit, "100"}}], 
+																								 sources: [%{event: 3, trace: 1}],
+																								 updates: []}},
+																							{"3", "4", 
+																							 %{guards: [], 
+																								 label: "vend", 
+																								 outputs: [{:assign, :o1, {:lit, "coke"}}], 
+																								 sources: [%{event: 4, trace: 1}], 
+																								 updates: []}}
+																						]}
+		assert EFSM.walk(efsm1,tbroken,{"0",%{}}) == {:output_missmatch, 
 																								[%{inputs: ["pepsi"], label: "select", outputs: []}, 
 																								 %{inputs: ["50"], label: "coin", outputs: ["50"]},
 																								 %{inputs: ["50"], label: "coin", outputs: ["100"]}], 
-																								{"9", %{}},
+																								{"9", %{rlasto1: "100"}},
 																								%{
 																									event: %{inputs: [], label: "vend", outputs: ["coke"]}, 
 																									observed: %{o1: "pepsi"}
 																								 },
-																								[{"0","7"},{"7","8"},{"8","9"}]
-																							 }
+																								[{"0","7", %{guards: [{:eq, {:v, :i1}, {:lit, "pepsi"}}], 
+																														 label: "select", 
+																														 outputs: [], 
+																														 sources: [%{event: 1, trace: 3}], 
+																														 updates: []}},
+																								 {"7","8", %{guards: [{:eq, {:v, :i1}, {:lit, "50"}}], 
+																														 label: "coin", 
+																														 outputs: [{:assign, :o1, {:lit, "50"}}], 
+																														 sources: [%{event: 2, trace: 3}], 
+																														 updates: []}},
+																								 {"8","9", %{guards: [{:eq, {:v, :i1}, {:lit, "50"}}], 
+																														 label: "coin", 
+																														 outputs: [{:assign, :o1, {:lit, "100"}}], 
+																														 sources: [%{event: 3, trace: 3}],
+																														 updates: []}}]
+																								 }
 
-		assert EFSM.walk(t1,{"0",%{}},efsm2) == {:ok, {"2", %{r1: "coke", r2: 100}}, [%{}, %{o1: "50"}, %{o1: "100"}, %{o1: "coke"}],[{"0","1"},{"1","1"},{"1","1"},{"1","2"}]}
-		assert EFSM.walk(t2,{"0",%{}},efsm2) == {:ok,{"2", %{r1: "coke", r2: 100}}, [%{},%{o1: "100"}, %{o1: "coke"}],[{"0","1"},{"1","1"},{"1","2"}]}
-		assert EFSM.walk(t3,{"0",%{}},efsm2) == {:ok, {"2", %{r1: "pepsi", r2: 100}}, [%{}, %{o1: "50"}, %{o1: "100"}, %{o1: "pepsi"}],[{"0","1"},{"1","1"},{"1","1"},{"1","2"}]}
-		assert EFSM.walk(tbroken,{"0",%{}},efsm2) == {:output_missmatch,
-																								[%{inputs: ["pepsi"], label: "select", outputs: []}, 
-																								 %{inputs: ["50"], label: "coin", outputs: ["50"]},
-																								 %{inputs: ["50"], label: "coin", outputs: ["100"]}], 
-																								{"1", %{r1: "pepsi", r2: 100}},
-																								%{event: %{inputs: [], label: "vend", outputs: ["coke"]}, observed: %{o1: "pepsi"}},
-																								[{"0","1"},{"1","1"},{"1","1"}]
-																							 }
-
+		{:ok, {"2", %{r1: "coke", r2: 100}}, _, _} = EFSM.walk(efsm2,t1,{"0",%{}})
+		{:ok,{"2", %{r1: "coke", r2: 100}}, _, _} = EFSM.walk(efsm2,t2,{"0",%{}})
+		{:ok, {"2", %{r1: "pepsi", r2: 100}}, _, _} = EFSM.walk(efsm2,t3,{"0",%{}})
+		{:output_missmatch,
+		 [%{inputs: ["pepsi"], label: "select", outputs: []}, 
+			%{inputs: ["50"], label: "coin", outputs: ["50"]},
+			%{inputs: ["50"], label: "coin", outputs: ["100"]}], 
+		 {"1", %{r1: "pepsi", r2: 100}},
+		 _,_} = EFSM.walk(efsm2,tbroken,{"0",%{}})
 	end
 
 	test "Build PTA" do
@@ -245,34 +282,36 @@ defmodule Athena.EFSMTest do
 		#{efsm,_} = EFSM.merge("1","1",efsm1)
 		#assert efsm == efsm1
 
-		{efsm,_} = EFSM.merge("0","0",
-													%{{"0","1"} =>
-															[%{:label => "vend",
-																				:guards => [],
-																				:outputs => [{:assign,:o1,{:v,:r1}}],
-																				:updates => [],
-																				:sources => []
-															},
-															 %{:label => "vend",
-																				:guards => [],
-																				:outputs => [{:assign,:o1,{:lit,"pepsi"}}],
-																				:updates => [],
-																				:sources => []
-															}],
-														{"0","2"} =>
-															[%{:label => "vend",
-																				:guards => [],
-																				:outputs => [{:assign,:o1,{:v,:r1}}],
-																				:updates => [],
-																				:sources => []
-															},
-															 %{:label => "vend",
-																				:guards => [],
-																				:outputs => [{:assign,:o1,{:lit,"coke"}}],
-																				:updates => [],
-																				:sources => []
-															}]
-												 })
+		{efsm,merges} = EFSM.merge(%{{"0","1"} =>
+																 [%{:label => "vend",
+																		:guards => [],
+																		:outputs => [{:assign,:o1,{:v,:r1}}],
+																		:updates => [],
+																		:sources => []
+																	 },
+																	%{:label => "vend",
+																		:guards => [],
+																		:outputs => [{:assign,:o1,{:lit,"pepsi"}}],
+																		:updates => [],
+																		:sources => []
+																 }],
+																 {"0","2"} =>
+																 [%{:label => "vend",
+																		:guards => [],
+																		:outputs => [{:assign,:o1,{:v,:r1}}],
+																		:updates => [],
+																		:sources => []
+																	 },
+																	%{:label => "vend",
+																		:guards => [],
+																		:outputs => [{:assign,:o1,{:lit,"coke"}}],
+																		:updates => [],
+																		:sources => []
+																 }]
+																},
+															 "0","0"
+															)
+		assert merges == [{"0","0"},{"1","2"},{"1,2","1,2"}]
 		assert efsm == %{{"0","1,2"} =>
 										 [%{:label => "vend",
 												:guards => [],
@@ -298,9 +337,9 @@ defmodule Athena.EFSMTest do
 																				:sources => []
 																			 }
 										])
-		{efsm,_merges} = EFSM.merge("1","1",efsmee)
+		{efsm,_merges} = EFSM.merge(efsmee,"1","1")
 		assert efsm == efsm2 
-		{efsm,_merges} = EFSM.merge("2","2",efsmee)
+		{efsm,_merges} = EFSM.merge(efsmee,"2","2")
 		assert efsm == efsm2 
 
 
@@ -326,16 +365,15 @@ defmodule Athena.EFSMTest do
 																					 :sources => []
 																					}
 											 ])
-		{efsm,_merges} = EFSM.merge("1","1",efsmee)
+		{efsm,_merges} = EFSM.merge(efsmee,"1","1")
 		assert efsm == efsmfixed
-		{efsm,_merges} = EFSM.merge("2","2",efsmee)
+		{efsm,_merges} = EFSM.merge(efsmee,"2","2")
 		assert efsm == efsmfixed
 	end
 
 	test "Merge" do
 		# This should merge states 1 and 7, but then the non-determinism checker should "zip" together some more
-		{efsm,merges} = EFSM.merge("1","7",efsm1)
-		assert EFSM.merge("1","7",efsm1) == {%{
+		assert EFSM.merge(efsm1,"1","7") == {%{
 																					 {"0","1,7"} => [%{:label => "select", 
 																														 :guards => [{:eq,{:v,:i1},{:lit,"pepsi"}}], 
 																														 :outputs => [], 
@@ -391,8 +429,8 @@ defmodule Athena.EFSMTest do
 	test "Find the start state" do
 		assert EFSM.get_start(efsm1) == "0"
 		assert EFSM.get_start(efsm2) == "0"
-		assert EFSM.get_start(elem(EFSM.merge("0","1",efsm1),0)) == "0,1"
-		assert EFSM.get_start(elem(EFSM.merge("1","0",efsm1),0)) == "1,0"
+		assert EFSM.get_start(elem(EFSM.merge(efsm1,"0","1"),0)) == "0,1"
+		assert EFSM.get_start(elem(EFSM.merge(efsm1,"1","0"),0)) == "1,0"
 	end
 	
 

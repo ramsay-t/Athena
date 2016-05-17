@@ -314,7 +314,6 @@ defmodule Athena.EFSM do
   Where the merge produces non-determinism (due to subsuming guards and matching event names) this will also merge the destination states. 
   This can lead to further merges as the algorithm 'zips' together chains of states that are now apparently equivilent.
   """
-	@spec merge(t,String.t,String.t) :: t
 	def merge(efsm,s1,s2) do
 		merge(efsm,s1,s2,[])
 	end
@@ -342,16 +341,17 @@ defmodule Athena.EFSM do
 												end)
 		# Check for non-determinism
 		{detefsm,statemerges} = List.foldl(get_compat_trans(alltrans),
-												 {newefsm,[{s1,s2} | ignore]},
-												 fn({{d1,_l1},{d2,_l2}},{accefsm,accmerges}) ->
-														 case Enum.member?(accmerges,{d1,d2}) do
-															 false ->
-																 {nnefsm,submerges} = merge(accefsm,true_name(d1,accmerges),true_name(d2,accmerges),accmerges)
-																 {nnefsm,accmerges ++ submerges}
-															 true ->
-																{accefsm,accmerges} 
-														 end
-												 end)
+																			 {newefsm,[{s1,s2} | ignore]},
+																			 fn({{d1,_l1},{d2,_l2}},{accefsm,accmerges}) ->
+																					 case Enum.member?(accmerges,{d1,d2}) do
+																						 false ->
+																							 :io.format("Zipping ~p and ~p...",[d1,d2])
+																							 {nnefsm,submerges} = merge(accefsm,true_name(d1,accmerges),true_name(d2,accmerges),accmerges)
+																							 {nnefsm,accmerges ++ submerges}
+																						 true ->
+																							 {accefsm,accmerges} 
+																					 end
+																			 end)
 		{merge_trans(detefsm,statemerges),Enum.filter(statemerges, fn(m) -> not Enum.any?(ignore, fn(i) -> i == m end) end)}
 	end
 
@@ -700,6 +700,81 @@ defmodule Athena.EFSM do
 		end
 	end
 
+  def make_bind(efsm,traceset,t,state) do
+    Enum.map(t[:sources],
+						 fn(s) ->
+								 {prefix,tail} = Enum.split(Athena.get_trace(traceset,s[:trace]),s[:event]-1)
+								 :io.format("T:~p, E:~p ~n~p~nmakes~n~p~n~n",[s[:trace],s[:event],Athena.get_trace(traceset,s[:trace]),tail])
+								 event = hd(tail)
+								 data = case get_data(efsm,prefix,state) do
+													nil ->
+														#FIXME erm, this might imply something very bad...
+														%{}
+													d ->
+														d
+												end
+								 #:io.format("Got Data: ~p~n",[data])
+								 midbind = List.foldl(Enum.zip(:lists.seq(1,length(event[:inputs])),event[:inputs]),
+																					 data,
+																					 fn({idx,i},acc) ->
+																							 val = case Integer.parse(i) do
+																											 {v,""} ->
+																												 v
+																											 _ ->
+																												 i
+																										 end
+																							 # Yes, this is a horrible way to make the names
+																							 Map.put(acc,String.to_atom("i" <> to_string(idx)),val)
+																					 end)
+						 end)
+  end
+
+  defp get_data(efsm,prefix,state) do
+    if state == get_start(efsm) do
+      %{}
+    else
+      :io.format("WALKING ~p~n",[prefix])
+      case walk(efsm,prefix) do
+				{:ok,{s,d},_,_} ->
+					if s == state do
+						d
+					else
+						{pp,_} = Enum.split(prefix,length(prefix)-1)
+						case pp do
+							[] ->
+								nil
+							_ ->
+								get_data(efsm,pp,state)
+						end
+					end
+				{:nondeterministic,{_state,_data},_event,path,_alts} ->
+					:io.format("NON-DET at ~p~n~p of ~p~n",[{_state,_data},_event,path])
+					case List.foldl(path,{[],[]},fn({from,to,tran},{bef,aft}) -> 
+																					 if from == state do
+																						 {bef,[tran]}
+																					 else
+																						 if aft == [] do
+																							 {bef ++ [tran],[]}
+																						 else
+																							 {bef,aft ++ [tran]}
+																						 end
+																					 end
+																			 end) do
+						{shorter,_} ->
+							if length(shorter) < length(prefix) do
+								{newprefix,_} = Enum.split(prefix,length(shorter))
+								get_data(efsm,newprefix,state)
+							else
+								:io.format("Yeah, whut?~n")
+								%{}
+							end
+					end
+				fail ->
+					{pp,_} = Enum.split(prefix,length(prefix)-1)
+					get_data(efsm,pp,state)				
+      end
+    end
+  end
 
 
 end

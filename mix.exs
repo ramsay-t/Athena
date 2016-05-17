@@ -8,7 +8,7 @@ defmodule Athena.Mixfile do
 		 name: "Athena",
 		 source_url: "https://github.com/ramsay-t/Athena",
 		 homepage_url: "https://github.com/ramsay-t/Athena",
-		 test_coverage: [tool: Coverex.Task, log: :error],
+#		 test_coverage: [tool: Coverex.Task, log: :error],
      deps: deps]
   end
 
@@ -16,7 +16,8 @@ defmodule Athena.Mixfile do
   #
   # Type `mix help compile.app` for more information
   def application do
-    [applications: [:logger, :httpoison]]
+#    [applications: [:logger, :httpoison]]
+		[]
   end
 
   # Dependencies can be Hex packages:
@@ -32,7 +33,7 @@ defmodule Athena.Mixfile do
     [{:epagoge, git: "https://github.com/ramsay-t/epagoge"},
 		 {:skel, git: "https://github.com/ramsay-t/skel", override: true},
 		 {:json, git: "https://github.com/cblage/elixir-json/"},
-		 {:coverex, "~> 1.0.0", only: :test},
+#		 {:coverex, "~> 1.0.0", only: :test},
 		 {:earmark, "~> 0.1", only: :dev},
 		 {:ex_doc, "~> 0.6", only: :dev}]
   end
