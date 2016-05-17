@@ -1,11 +1,7 @@
 language: erlang
 otp_release:
-# 17.2 not supported by travis
-# 17.1 some deps fail to build (hackney?)
-#Not yet supported...   - 17.5
-   - 17.4
-   - 17.3
-   - 17.0
+   - 18.3
+   - 18.2
 before_install:
    - git clone https://github.com/elixir-lang/elixir
    - make -C elixir
